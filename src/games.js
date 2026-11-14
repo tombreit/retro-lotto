@@ -31,6 +31,8 @@ export const GAMES = Object.freeze({
     max: 49,
     pick: 6,
     columns: 7,
+    /** Zusatzzahl, die die App bewusst nicht auswertet – für Hinweise wie „egal welche Superzahl“. */
+    extra: 'Superzahl',
     /** Ab so vielen Richtigen gibt es auch ohne Superzahl einen Gewinn. */
     minWinHits: 3,
     /** Wochentage für neue Ziehungen (0 = So): Mittwoch und Samstag. */
@@ -46,6 +48,7 @@ export const GAMES = Object.freeze({
     max: 50,
     pick: 5,
     columns: 7,
+    extra: 'Eurozahlen',
     minWinHits: 3,
     /** Dienstag (seit 03/2022) und Freitag. */
     drawDays: [2, 5],

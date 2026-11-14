@@ -208,7 +208,9 @@ export class ResultView extends HTMLElement {
         (${formatPercent(wins / store.size)}), jeweils ab ${game.minWinHits} Richtigen.
       </p>
       <div class="hit-ladder">${rows}</div>
-      <p class="result-odds">Chance auf ${game.pick} Richtige pro Ziehung: ${formatOdds(game.combinations)}</p>`;
+      <p class="result-odds">
+        Chance auf ${game.pick} Richtige pro Ziehung, egal welche ${game.extra}: ${formatOdds(game.combinations)}
+      </p>`;
   }
 }
 
