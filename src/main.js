@@ -32,6 +32,8 @@ const stats = $('stats-view');
 const toast = $('.toast');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const coarsePointer = matchMedia('(pointer: coarse)');
+/** Einspaltiges Layout (Smartphone) – muss zur Media Query in components.css passen. */
+const narrowLayout = matchMedia('(width < 62rem)');
 
 // ---------------------------------------------------------------- Zustand
 
@@ -50,6 +52,7 @@ const slots = () => state.tipps[state.gameId];
 /** Nur die Zahlen – für Auswertung, Raster und Teilen. */
 const tipp = () => numbersOf(slots());
 const setSlots = (next) => (state.tipps[state.gameId] = next);
+const isComplete = () => tipp().length === game().pick;
 
 function applyHash() {
   const parsed = parseHash(location.hash);
@@ -90,7 +93,7 @@ function render() {
     grid.game = g;
     grid.value = tipp();
     tray.render(g, slots());
-    result.update(store, tipp());
+    result.update(g, store, tipp());
   } else {
     tray.clearEntry();
     stats.update(store, state.period);
@@ -113,9 +116,11 @@ function renderFooter(store) {
  */
 function commit(change, { animate = 'view', origin } = {}) {
   const run = () => {
+    const wasComplete = isComplete();
     change();
     persist();
     render();
+    if (!wasComplete && isComplete()) revealResult();
   };
   if (reducedMotion.matches || document.hidden) return run();
   if (animate === 'balls') return flyBalls(run, origin);
@@ -129,22 +134,59 @@ const offset = (from, to) =>
   `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
 
 /**
+ * Wird der Tipp voll, steht das Ergebnis auf dem Smartphone direkt unter der Tipp-Leiste. War die
+ * Seite gescrollt, läge es jetzt außer Sicht (über dem Bild oder hinter der klebenden Leiste) –
+ * dann nach oben scrollen.
+ */
+function revealResult() {
+  if (!narrowLayout.matches || state.view !== 'pruefen') return;
+  const top = rectOf(result.querySelector('.result-lead')).top;
+  if (top >= rectOf(tray.querySelector('.tray')).bottom - 1 && top < innerHeight / 2) return;
+  scrollTo({ top: 0, behavior: reducedMotion.matches ? 'instant' : 'smooth' });
+}
+
+/**
  * Neue Kugeln fliegen aus dem Raster in ihren Platz in der Leiste, entfernte zurück ins Raster.
  * Alle anderen bleiben, wo sie sind – entfernte Zahlen hinterlassen eine Lücke.
  * Mit `origin` (getippte Zahlen) wachsen neue Kugeln stattdessen aus dem Eingabefeld.
+ *
+ * Wird der Tipp voll (oder wieder unvollständig), wechseln auf dem Smartphone Ergebnis, Knöpfe und
+ * Raster die Reihenfolge: Raster und Knöpfe gleiten an ihren neuen Platz, das Ergebnis blendet ein.
  */
 function flyBalls(run, origin) {
   const trayBalls = () => new Map([...tray.querySelectorAll('.ball[data-number]')].map((b) => [Number(b.dataset.number), b]));
   const before = new Map([...trayBalls()].map(([n, b]) => [n, rectOf(b)]));
+  const blocks = [grid, tray.querySelector('.tray-actions')];
+  const lead = result.querySelector('.result-lead');
+  const blockTops = blocks.map((block) => rectOf(block).top);
+  const leadTop = rectOf(lead).top;
   run();
   const after = trayBalls();
+
+  blocks.forEach((block, i) => {
+    const dy = blockTops[i] - rectOf(block).top;
+    if (Math.abs(dy) > 1) block.animate([{ translate: `0 ${dy}px` }, { translate: '0 0' }], { duration: 420, easing: EASE });
+  });
+  if (Math.abs(leadTop - rectOf(lead).top) > 1)
+    lead.animate([{ opacity: 0, translate: '0 0.75rem' }, { opacity: 1, translate: '0 0' }], {
+      duration: 360,
+      delay: 120,
+      easing: EASE,
+      fill: 'backwards',
+    });
+  // Startpunkt im Raster dort, wo die Zahl angetippt wurde – vor einer etwaigen Verschiebung.
+  const gridShift = blockTops[0] - rectOf(grid).top;
+  const fromGrid = (n) => {
+    const r = rectOf(grid.ballFor(n));
+    return r && { left: r.left, top: r.top + gridShift, width: r.width, height: r.height };
+  };
 
   let stagger = 0;
   for (const [n, ball] of after) {
     const to = rectOf(ball);
     const isNew = !before.has(n);
     const typed = isNew && origin;
-    const from = before.get(n) ?? origin ?? rectOf(grid.ballFor(n));
+    const from = before.get(n) ?? origin ?? fromGrid(n);
     if (!from || (!typed && Math.abs(from.left - to.left) < 1 && Math.abs(from.top - to.top) < 1)) continue;
     const start = typed ? { transform: `${offset(from, to)} scale(0.4)`, opacity: 0 } : { transform: offset(from, to) };
     ball.animate([start, { transform: 'none', opacity: 1 }], {

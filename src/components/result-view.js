@@ -42,13 +42,26 @@ function drawList(store, indices, tipp, shown) {
       : ''}`;
 }
 
+/**
+ * Das Ergebnis besteht aus zwei Blöcken, die das Layout getrennt platziert: der Kernaussage
+ * (`.result-lead`, zugleich Live-Region für Screenreader) und den Details (`.result-more`).
+ * Bei vollem Tipp steht die Kernaussage auf dem Smartphone über dem Raster, sonst darunter.
+ * Beide Container bleiben bestehen – eine neu eingefügte Live-Region würde nicht angesagt.
+ */
 export class ResultView extends HTMLElement {
+  #game = null;
   #store = null;
   #tipp = [];
   #open = new Set();
   #shown = new Map();
+  #lead;
+  #more;
 
   connectedCallback() {
+    if (this.#lead) return;
+    mount(this, html`<div class="result-lead" aria-live="polite"></div><div class="result-more"></div>`);
+    this.#lead = this.querySelector('.result-lead');
+    this.#more = this.querySelector('.result-more');
     this.addEventListener('toggle', (event) => {
       const details = event.target.closest?.('details[data-hits]');
       if (!details) return;
@@ -67,9 +80,11 @@ export class ResultView extends HTMLElement {
     });
   }
 
-  update(store, tipp) {
+  /** @param store fehlt, solange die Ziehungen des Spiels noch laden */
+  update(game, store, tipp) {
     const tippChanged = tipp.join() !== this.#tipp.join();
     if (tippChanged) this.#shown.clear();
+    this.#game = game;
     this.#store = store;
     this.#tipp = tipp;
     this.#render();
@@ -78,17 +93,28 @@ export class ResultView extends HTMLElement {
   #render() {
     const store = this.#store;
     const tipp = this.#tipp;
+    const game = this.#game;
+    // Der Zustand steht schon vor dem Laden fest – das Layout (Ergebnis über oder unter dem Raster)
+    // darf beim Eintreffen der Daten nicht mehr springen.
+    this.dataset.state = tipp.length === 0 ? 'empty' : tipp.length < game.pick ? 'partial' : 'full';
     if (!store) {
-      mount(this, html`<p class="result-loading" role="status">Ziehungen werden geladen …</p>`);
+      mount(
+        this.#lead,
+        this.dataset.state === 'full'
+          ? html`<div class="result-card is-loading" role="status">
+              <p class="result-headline">Prüfe deinen Tipp …</p>
+              <p class="result-sub">Die Ziehungen werden geladen.</p>
+            </div>`
+          : html`<p class="result-loading" role="status">Ziehungen werden geladen …</p>`,
+      );
+      mount(this.#more, html``);
       return;
     }
-    const game = store.game;
-    this.dataset.state = tipp.length === 0 ? 'empty' : tipp.length < game.pick ? 'partial' : 'full';
-    if (tipp.length === 0) mount(this, this.#empty(store));
-    else {
-      this.analysis = analyze(store, tipp);
-      mount(this, tipp.length < game.pick ? this.#partial(store, tipp) : this.#full(store, tipp));
-    }
+    if (tipp.length) this.analysis = analyze(store, tipp);
+    const { lead, more = html`` } =
+      tipp.length === 0 ? this.#empty(store) : tipp.length < game.pick ? this.#partial(store, tipp) : this.#full(store, tipp);
+    mount(this.#lead, lead);
+    mount(this.#more, more);
     for (const details of this.querySelectorAll('details[open][data-hits]')) this.#fillDetails(details);
   }
 
@@ -101,7 +127,7 @@ export class ResultView extends HTMLElement {
 
   #empty(store) {
     const { game } = store;
-    return html`<div class="result-card is-empty">
+    const lead = html`<div class="result-card is-empty">
       <p class="result-headline">Wähle ${game.pick} Zahlen.</p>
       <p class="result-sub">
         Schon ab der ersten Zahl siehst du, wie oft sie gezogen wurde. Mit ${game.pick} Zahlen
@@ -113,6 +139,7 @@ export class ResultView extends HTMLElement {
         <span class="for-pointer">Du kannst die Zahlen auch einfach eintippen, getrennt durch Leerzeichen oder Komma.</span>
       </p>
     </div>`;
+    return { lead };
   }
 
   #partial(store, tipp) {
@@ -136,12 +163,13 @@ export class ResultView extends HTMLElement {
       `Erwartet wären ${formatExpected(exp)}.`,
     ].filter(Boolean);
 
-    return html`<div class="result-card">
-        <p class="result-headline">${headline}</p>
-        <p class="result-sub">${sub.join(' ')}</p>
-        <p class="result-hint">Noch ${plural(missing, 'Zahl', 'Zahlen')} bis zum vollständigen Tipp.</p>
-      </div>
-      ${together.length > 0
+    const lead = html`<div class="result-card">
+      <p class="result-headline">${headline}</p>
+      <p class="result-sub">${sub.join(' ')}</p>
+      <p class="result-hint">Noch ${plural(missing, 'Zahl', 'Zahlen')} bis zum vollständigen Tipp.</p>
+    </div>`;
+    const more =
+      together.length > 0
         ? html`<details class="hit-row" data-hits="${k}" ${this.#open.has(k) ? 'open' : ''}>
             <summary>
               <span class="hit-label">${k === 1 ? 'Alle Ziehungen mit dieser Zahl' : 'Alle gemeinsamen Ziehungen'}</span>
@@ -149,7 +177,8 @@ export class ResultView extends HTMLElement {
             </summary>
             <div class="details-body"></div>
           </details>`
-        : ''}`;
+        : html``;
+    return { lead, more };
   }
 
   #full(store, tipp) {
@@ -199,11 +228,11 @@ export class ResultView extends HTMLElement {
       );
     }
 
-    return html`<div class="result-card is-${tone}">
-        <p class="result-headline">${headline}</p>
-        <p class="result-sub">${sub}</p>
-      </div>
-      <p class="result-summary">
+    const lead = html`<div class="result-card is-${tone}">
+      <p class="result-headline">${headline}</p>
+      <p class="result-sub">${sub}</p>
+    </div>`;
+    const more = html`<p class="result-summary">
         Gewonnen hättest du in ${plural(wins, 'Ziehung', 'Ziehungen')} von ${formatNumber(store.size)}
         (${formatPercent(wins / store.size)}), jeweils ab ${game.minWinHits} Richtigen.
       </p>
@@ -211,6 +240,7 @@ export class ResultView extends HTMLElement {
       <p class="result-odds">
         Chance auf ${game.pick} Richtige pro Ziehung, egal welche ${game.extra}: ${formatOdds(game.combinations)}
       </p>`;
+    return { lead, more };
   }
 }
 

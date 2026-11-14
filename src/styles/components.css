@@ -91,14 +91,41 @@
       opacity: 1;
     }
   }
-  number-grid {
-    order: 1;
-  }
-  .tray-actions {
-    order: 2;
-  }
-  result-view {
-    order: 3;
+  /*
+   * Reihenfolge auf dem Smartphone. Unvollständiger Tipp: Leiste, Raster, Knöpfe, Ergebnis.
+   * Voller Tipp: Leiste, Ergebnis, Knöpfe, Raster – die Kernaussage steht oben im Bild, und
+   * „Zufallstipp“ bleibt zum Weiterwürfeln direkt unter dem Ergebnis.
+   */
+  @media (width < 62rem) {
+    result-view {
+      display: contents;
+    }
+    number-grid {
+      order: 2;
+    }
+    .tray-actions {
+      order: 3;
+    }
+    .result-lead {
+      order: 4;
+      margin-top: 1.25rem;
+    }
+    .result-more {
+      order: 5;
+    }
+    #view-pruefen:has(> result-view[data-state='full']) {
+      & .result-lead {
+        order: 1;
+        margin-top: 0.25rem;
+      }
+      & .tray-actions {
+        order: 2;
+        margin-block: 0 1.5rem;
+      }
+      & number-grid {
+        order: 3;
+      }
+    }
   }
 
   .tray-field {
@@ -319,12 +346,8 @@
   }
 
   /* ------------------------------------------------------------ Ergebnis */
-  result-view {
-    display: block;
-    margin-top: 1.25rem;
-  }
   /* Ladehinweis ohne Platzbedarf im Fluss – so verschiebt sich beim Eintreffen der Daten nichts. */
-  result-view,
+  .result-lead,
   stats-view {
     position: relative;
   }
@@ -345,7 +368,12 @@
     letter-spacing: -0.035em;
     text-wrap: balance;
   }
-  .result-card.is-empty .result-headline {
+  /* Platzhalter bei vollem Tipp, solange die Daten laden: so hoch wie eine typische Ergebniskarte
+     (zwei Zeilen Schlagzeile, eine Zeile Text), damit das Raster darunter nicht springt. */
+  .result-card.is-loading {
+    min-block-size: calc(2 * 1.08 * var(--step-3) + 0.6rem + 1.5 * var(--step-1) + 1.5rem);
+  }
+  .result-card:is(.is-empty, .is-loading) .result-headline {
     color: var(--ink-2);
   }
   .result-card.is-jackpot .result-headline {
@@ -422,7 +450,7 @@
       block-size: auto;
     }
   }
-  result-view > .hit-row {
+  .result-more > .hit-row {
     border-top: 1px solid var(--line);
   }
   .hit-label {
@@ -789,30 +817,32 @@
     display: flex;
     justify-content: center;
     gap: 0.5rem;
-    padding: 0.4rem 1rem calc(0.4rem + env(safe-area-inset-bottom));
+    padding: 0.25rem 1rem calc(0.25rem + env(safe-area-inset-bottom));
     background: color-mix(in srgb, var(--surface) 88%, transparent);
     backdrop-filter: blur(16px) saturate(1.4);
     -webkit-backdrop-filter: blur(16px) saturate(1.4);
     border-top: 1px solid var(--line);
     view-transition-name: tab-bar;
 
+    /* Icon und Beschriftung nebeneinander – spart gegenüber übereinander rund ein Drittel der Höhe. */
     & a {
       flex: 0 1 9rem;
-      min-height: 3.1rem;
+      min-height: 2.75rem;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0.15rem;
-      border-radius: var(--radius-sm);
-      font-size: 0.75rem;
+      gap: 0.45rem;
+      border-radius: 999px;
+      font-size: var(--step--1);
       font-weight: 600;
       color: var(--ink-3);
       text-decoration: none;
       -webkit-tap-highlight-color: transparent;
+      transition: background-color 0.2s, color 0.2s;
 
       &[aria-current='page'] {
         color: var(--ink);
+        background: var(--surface-sunk);
         & svg {
           stroke: var(--accent);
           & .filled {
@@ -822,7 +852,7 @@
       }
     }
     & svg {
-      width: 1.5rem;
+      width: 1.25rem;
       fill: none;
       stroke: currentColor;
       stroke-width: 2;
@@ -941,7 +971,17 @@
     .tray-actions {
       grid-column: 1;
     }
+    .tray {
+      grid-row: 1;
+    }
+    number-grid {
+      grid-row: 2;
+    }
+    .tray-actions {
+      grid-row: 3;
+    }
     result-view {
+      display: block;
       grid-column: 2;
       grid-row: 1 / -1;
       margin-top: 0.5rem;
