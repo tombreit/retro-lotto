@@ -11,7 +11,18 @@ import { loadStore } from './data.js';
 import { GAMES, GAME_IDS } from './games.js';
 import { formatDate, formatList, formatNumber } from './lib/format.js';
 import { html, mount } from './lib/html.js';
-import { formatHash, loadPrefs, normalizeTipp, parseHash, quickTipp, savePrefs } from './lib/tipp.js';
+import {
+  addNumbers,
+  backspaceTarget,
+  formatHash,
+  loadPrefs,
+  normalizeTipp,
+  numbersOf,
+  parseHash,
+  quickTipp,
+  removeNumber,
+  savePrefs,
+} from './lib/tipp.js';
 
 const $ = (selector) => document.querySelector(selector);
 const grid = $('number-grid');
@@ -34,21 +45,25 @@ const state = {
 const stores = {};
 
 const game = () => GAMES[state.gameId];
-const tipp = () => state.tipps[state.gameId];
+/** Plätze des aktuellen Tipps, mit Lücken (`null`) – bestimmt, wo jede Kugel liegt. */
+const slots = () => state.tipps[state.gameId];
+/** Nur die Zahlen – für Auswertung, Raster und Teilen. */
+const tipp = () => numbersOf(slots());
+const setSlots = (next) => (state.tipps[state.gameId] = next);
 
 function applyHash() {
   const parsed = parseHash(location.hash);
   if (!parsed) return false;
   state.gameId = parsed.gameId;
   state.view = parsed.view;
-  if (parsed.numbers) state.tipps[parsed.gameId] = parsed.numbers;
+  if (parsed.slots) state.tipps[parsed.gameId] = parsed.slots;
   return true;
 }
 applyHash();
 
 function persist() {
   savePrefs({ gameId: state.gameId, period: state.period, tipps: state.tipps });
-  const hash = formatHash({ gameId: state.gameId, view: state.view, numbers: tipp() });
+  const hash = formatHash({ gameId: state.gameId, view: state.view, slots: slots() });
   if (location.hash !== hash) history.replaceState(null, '', hash);
 }
 
@@ -64,7 +79,7 @@ function render() {
     button.setAttribute('aria-checked', String(button.dataset.gameId === g.id));
   for (const link of document.querySelectorAll('.tab-bar [data-view]')) {
     const view = link.dataset.view;
-    link.href = formatHash({ gameId: g.id, view, numbers: tipp() });
+    link.href = formatHash({ gameId: g.id, view, slots: slots() });
     if (view === state.view) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
@@ -74,7 +89,7 @@ function render() {
   if (state.view === 'pruefen') {
     grid.game = g;
     grid.value = tipp();
-    tray.render(g, tipp());
+    tray.render(g, slots());
     result.update(store, tipp());
   } else {
     tray.clearEntry();
@@ -114,7 +129,8 @@ const offset = (from, to) =>
   `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.width / to.width})`;
 
 /**
- * Neue Kugeln fliegen aus dem Raster in die Leiste, entfernte zurück, der Rest rückt nach.
+ * Neue Kugeln fliegen aus dem Raster in ihren Platz in der Leiste, entfernte zurück ins Raster.
+ * Alle anderen bleiben, wo sie sind – entfernte Zahlen hinterlassen eine Lücke.
  * Mit `origin` (getippte Zahlen) wachsen neue Kugeln stattdessen aus dem Eingabefeld.
  */
 function flyBalls(run, origin) {
@@ -181,7 +197,7 @@ function toggleNumber(number) {
   navigator.vibrate?.(8);
   commit(
     () => {
-      state.tipps[state.gameId] = normalizeTipp(game(), has ? current.filter((n) => n !== number) : [...current, number]);
+      setSlots(has ? removeNumber(game(), slots(), number) : addNumbers(game(), slots(), [number]));
     },
     { animate: 'balls' },
   );
@@ -200,7 +216,7 @@ function enterNumbers({ numbers, invalid, origin }) {
     else added.push(n);
   }
   if (added.length)
-    commit(() => (state.tipps[state.gameId] = normalizeTipp(g, [...current, ...added])), { animate: 'balls', origin });
+    commit(() => setSlots(addNumbers(g, slots(), added)), { animate: 'balls', origin });
 
   if (invalid.length) {
     tray.reject();
@@ -215,13 +231,16 @@ function enterNumbers({ numbers, invalid, origin }) {
   if (added.length && tipp().length === g.pick && coarsePointer.matches) tray.blurEntry();
 }
 
-function removeLast() {
-  if (tipp().length) commit(() => (state.tipps[state.gameId] = tipp().slice(0, -1)), { animate: 'balls' });
+/** Rücktaste: entfernt die Zahl links vom freien Platz, an dem die Eingabe steht. */
+function backspace() {
+  const number = backspaceTarget(game(), slots());
+  if (number !== null) commit(() => setSlots(removeNumber(game(), slots(), number)), { animate: 'balls' });
 }
 
 async function share() {
   const numbers = tipp();
-  const url = new URL(formatHash({ gameId: state.gameId, view: 'pruefen', numbers }), location.href).href;
+  // Geteilt wird ohne Lücken – der Empfänger soll einfach die Zahlen sehen.
+  const url = new URL(formatHash({ gameId: state.gameId, view: 'pruefen', slots: numbers }), location.href).href;
   const text = `Hätten ${numbers.join(', ')} beim ${game().name} schon mal gewonnen?`;
   try {
     if (navigator.share) await navigator.share({ title: 'Retro-Lotto', text, url });
@@ -248,16 +267,16 @@ tray.addEventListener('tray-action', ({ detail }) => {
   switch (detail.action) {
     case 'remove':
       return toggleNumber(detail.number);
-    case 'remove-last':
-      return removeLast();
+    case 'backspace':
+      return backspace();
     case 'enter':
       return enterNumbers(detail);
     case 'random': {
-      const keep = tipp().length === game().pick ? [] : tipp();
-      return commit(() => (state.tipps[state.gameId] = quickTipp(game(), keep)), { animate: 'balls' });
+      const keep = tipp().length === game().pick ? [] : slots();
+      return commit(() => setSlots(quickTipp(game(), keep)), { animate: 'balls' });
     }
     case 'clear':
-      return commit(() => (state.tipps[state.gameId] = []), { animate: 'balls' });
+      return commit(() => setSlots([]), { animate: 'balls' });
     case 'share':
       return share();
   }
@@ -290,7 +309,7 @@ addEventListener('keydown', (event) => {
   if (state.view !== 'pruefen' || event.metaKey || event.ctrlKey || event.altKey || isTextEntry(event.target)) return;
   if (event.key === 'Backspace' && tipp().length) {
     event.preventDefault();
-    removeLast();
+    backspace();
   } else if (/^\d$/.test(event.key)) {
     event.preventDefault();
     tray.type(event.key);

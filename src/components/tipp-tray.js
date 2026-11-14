@@ -6,7 +6,7 @@
 // Kreis (--entry), die Kugeln darunter werden bei jeder Änderung neu gezeichnet.
 
 import { html, mount } from '../lib/html.js';
-import { parseEntry } from '../lib/tipp.js';
+import { freeSlot, numbersOf, parseEntry } from '../lib/tipp.js';
 import { icons } from './icons.js';
 
 const coarse = matchMedia('(pointer: coarse)');
@@ -61,7 +61,7 @@ export class TippTray extends HTMLElement {
         case 'Backspace':
           if (input.value) return;
           event.preventDefault();
-          return this.#emit({ action: 'remove-last' });
+          return this.#emit({ action: 'backspace' });
         case 'Enter':
           event.preventDefault();
           this.#take({ final: true });
@@ -74,38 +74,40 @@ export class TippTray extends HTMLElement {
     });
   }
 
-  render(game, numbers) {
+  /** @param {(number | null)[]} slots Plätze mit Lücken (`null`) */
+  render(game, slots) {
     if (game !== this.#game) {
       this.#game = game;
       this.#input.value = '';
       this.#input.setAttribute('aria-label', `Zahl eingeben, 1 bis ${game.max}`);
     }
-    const complete = numbers.length === game.pick;
+    const count = numbersOf(slots).length;
+    const entry = freeSlot(game, slots);
+    const complete = entry < 0;
     this.#field.classList.toggle('is-full', complete);
     this.#field.style.setProperty('--pick', game.pick);
-    this.#field.style.setProperty('--entry', Math.min(numbers.length, game.pick - 1));
+    this.#field.style.setProperty('--entry', complete ? game.pick - 1 : entry);
 
-    const slots = Array.from({ length: game.pick }, (_, i) => numbers[i]);
-    this.#list.setAttribute('aria-label', `Dein Tipp: ${numbers.length} von ${game.pick} Zahlen`);
+    this.#list.setAttribute('aria-label', `Dein Tipp: ${count} von ${game.pick} Zahlen`);
     mount(
       this.#list,
-      html`${slots.map((n, i) =>
+      html`${Array.from({ length: game.pick }, (_, i) => slots[i] ?? null).map((n, i) =>
         n
           ? html`<li>
               <button type="button" class="ball is-picked" data-number="${n}" aria-label="${n} entfernen">${n}</button>
             </li>`
-          : html`<li class="slot ${i === numbers.length ? 'is-entry' : ''}" aria-hidden="true"></li>`,
+          : html`<li class="slot ${i === entry ? 'is-entry' : ''}" aria-hidden="true"></li>`,
       )}`,
     );
     mount(
       this.#actions,
       html`<button type="button" class="button button-primary" data-action="random">
-          ${icons.dice}${complete || numbers.length === 0 ? 'Zufallstipp' : 'Auffüllen'}
+          ${icons.dice}${complete || count === 0 ? 'Zufallstipp' : 'Auffüllen'}
         </button>
-        <button type="button" class="button" data-action="clear" ${numbers.length ? '' : 'disabled'}>
+        <button type="button" class="button" data-action="clear" ${count ? '' : 'disabled'}>
           ${icons.clear}Leeren
         </button>
-        <button type="button" class="button" data-action="share" ${numbers.length ? '' : 'disabled'}>
+        <button type="button" class="button" data-action="share" ${count ? '' : 'disabled'}>
           ${icons.share}Teilen
         </button>`,
     );

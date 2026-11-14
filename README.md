@@ -25,7 +25,10 @@ ohne Laufzeit-Abhängigkeiten.
   - Am Desktop kann man einfach lostippen, ohne vorher zu klicken.
   - Eindeutige Zahlen wie 12 oder 7 werden sofort übernommen. Nur bei 1 bis 4 (Eurojackpot 1 bis 5)
     wartet die Eingabe auf Komma, Leerzeichen oder Enter, weil noch eine zweite Ziffer folgen könnte.
-  - Die Rücktaste entfernt die letzte Zahl. Ganze Zahlenreihen lassen sich einfügen.
+  - Die Rücktaste entfernt die Zahl links vom Eingabefeld. Ganze Zahlenreihen lassen sich einfügen.
+- **Feste Plätze:** Jede Zahl bleibt dort, wo sie eingegeben wurde; es wird nicht sortiert. Eine
+  entfernte Zahl hinterlässt eine Lücke, die nächste Zahl füllt die erste freie Stelle. Die Lücken
+  stehen auch in der URL (`#lotto/3--41`), geteilte Links enthalten nur die Zahlen.
 - **Bedienung:** Hell- und Dunkelmodus, `prefers-reduced-motion` wird beachtet.
 
 Superzahl und Eurozahlen werden bewusst nicht ausgewertet. Als Gewinn zählen ab 3 Richtige; dafür
