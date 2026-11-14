@@ -1,0 +1,22 @@
+{
+  "name": "retro-lotto",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Hätten meine Lottozahlen schon mal gewonnen? Alle Ziehungen von Lotto 6 aus 49 (seit 1955) und Eurojackpot (seit 2012).",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "vite",
+    "data": "node scripts/update-data.mjs",
+    "data:backfill": "node scripts/update-data.mjs --backfill",
+    "build": "node scripts/update-data.mjs && vite build",
+    "build:offline": "vite build",
+    "preview": "vite preview",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  }
+}

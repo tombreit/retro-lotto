@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="de" data-game="lotto">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Retro-Lotto – Hätten deine Zahlen schon mal gewonnen?</title>
+    <meta
+      name="description"
+      content="Prüfe deine Lottozahlen gegen alle Ziehungen von Lotto 6 aus 49 seit 1955 und Eurojackpot seit 2012 – mit Statistik zu heißen und kalten Zahlen."
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="wordmark" href="#" aria-label="Retro-Lotto, zur Startseite">
+        <svg class="wordmark-ball" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="11" />
+          <circle cx="12" cy="12" r="6.5" class="wordmark-ball-face" />
+        </svg>
+        <span>Retro-Lotto</span>
+      </a>
+      <div class="game-switch" role="radiogroup" aria-label="Spiel">
+        <button type="button" role="radio" data-game-id="lotto" aria-checked="true">6 aus 49</button>
+        <button type="button" role="radio" data-game-id="eurojackpot" aria-checked="false">Eurojackpot</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="view-pruefen" class="view" aria-labelledby="tab-pruefen">
+        <h1 class="visually-hidden">Zahlen prüfen</h1>
+        <tipp-tray></tipp-tray>
+        <number-grid></number-grid>
+        <result-view aria-live="polite"></result-view>
+      </section>
+
+      <section id="view-statistik" class="view" aria-labelledby="tab-statistik" hidden>
+        <h1 class="visually-hidden">Statistik</h1>
+        <stats-view></stats-view>
+      </section>
+
+      <footer class="data-footer">
+        <p class="data-summary"></p>
+        <button type="button" class="link-button" popovertarget="about-data">Über die Daten</button>
+      </footer>
+    </main>
+
+    <nav class="tab-bar" aria-label="Ansicht">
+      <a id="tab-pruefen" href="#lotto" data-view="pruefen" aria-current="page">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="6" cy="6" r="2" /><circle cx="12" cy="6" r="2" /><circle cx="18" cy="6" r="2" />
+          <circle cx="6" cy="12" r="2" /><circle cx="12" cy="12" r="2" class="filled" /><circle cx="18" cy="12" r="2" />
+          <circle cx="6" cy="18" r="2" class="filled" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
+        </svg>
+        Prüfen
+      </a>
+      <a id="tab-statistik" href="#lotto/statistik" data-view="statistik">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M5 20V11M12 20V5M19 20v-7" />
+        </svg>
+        Statistik
+      </a>
+    </nav>
+
+    <div id="about-data" popover class="sheet">
+      <div class="sheet-body">
+        <h2>Über die Daten</h2>
+        <div class="about-content"></div>
+        <button type="button" class="button" popovertarget="about-data" popovertargetaction="hide">Schließen</button>
+      </div>
+    </div>
+
+    <div class="toast" popover="manual" role="status"></div>
+  </body>
+</html>

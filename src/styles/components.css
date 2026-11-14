@@ -1,0 +1,972 @@
+@layer components {
+  /* ------------------------------------------------------------ Kopfzeile */
+  .app-header {
+    max-width: 34rem;
+    margin-inline: auto;
+    height: var(--header-h);
+    margin-top: env(safe-area-inset-top);
+    padding-inline: max(var(--gutter), env(safe-area-inset-left));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .wordmark {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 750;
+    font-size: var(--step-1);
+    letter-spacing: -0.03em;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .wordmark-ball {
+    width: 1.5rem;
+    fill: var(--accent);
+    transition: fill 0.3s;
+    view-transition-name: wordmark-ball;
+  }
+  .wordmark-ball-face {
+    fill: var(--surface);
+  }
+
+  /* ------------------------------------------------------------ Segmentierte Umschalter */
+  .segmented,
+  .game-switch {
+    display: inline-flex;
+    padding: 3px;
+    gap: 2px;
+    border-radius: 999px;
+    background: var(--surface-sunk);
+
+    & button {
+      min-height: 2.25rem;
+      padding: 0.25rem clamp(0.55rem, 2.6vw, 0.85rem);
+      border-radius: 999px;
+      font-size: var(--step--1);
+      font-weight: 600;
+      color: var(--ink-2);
+      white-space: nowrap;
+      transition: background-color 0.2s, color 0.2s;
+
+      &[aria-checked='true'] {
+        background: var(--raised);
+        color: var(--ink);
+        box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+      }
+    }
+  }
+
+  /* ------------------------------------------------------------ Prüfen-Ansicht */
+  #view-pruefen {
+    display: flex;
+    flex-direction: column;
+  }
+  tipp-tray {
+    display: contents;
+  }
+  .tray {
+    order: 0;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 0.75rem var(--gutter);
+    background: var(--paper);
+    container-type: scroll-state;
+  }
+  /* Trennlinie erst, wenn die Leiste wirklich klebt (CSS scroll-state queries) */
+  .tray-edge {
+    position: absolute;
+    inset: auto 0 0;
+    height: 1px;
+    background: var(--line);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  @container scroll-state(stuck: top) {
+    .tray-edge {
+      opacity: 1;
+    }
+  }
+  number-grid {
+    order: 1;
+  }
+  .tray-actions {
+    order: 2;
+  }
+  result-view {
+    order: 3;
+  }
+
+  .tray-field {
+    --slot: clamp(2.6rem, 12vw, 3.1rem);
+    --slot-gap: clamp(0.35rem, 2vw, 0.6rem);
+    position: relative;
+  }
+  .tray-balls {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: var(--slot-gap);
+
+    & li {
+      width: var(--slot);
+      aspect-ratio: 1;
+    }
+    & .slot {
+      border-radius: 50%;
+      border: 2px dashed var(--line-strong);
+      cursor: text;
+      transition: border-color 0.2s, background-color 0.2s;
+    }
+    & .ball {
+      width: 100%;
+      height: 100%;
+      font-size: var(--step-1);
+    }
+  }
+  @media (hover: hover) {
+    .tray-balls .slot:hover {
+      border-color: var(--ink-3);
+    }
+  }
+
+  /* Tastatureingabe: ein rundes Feld genau über dem nächsten freien Kreis (Index --entry). */
+  .tray-input {
+    position: absolute;
+    top: 0;
+    left: calc(
+      50% - (var(--pick) * var(--slot) + (var(--pick) - 1) * var(--slot-gap)) / 2 + var(--entry) *
+        (var(--slot) + var(--slot-gap))
+    );
+    width: var(--slot);
+    height: var(--slot);
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    text-align: center;
+    /* ≥ 16 px, sonst zoomt iOS beim Fokussieren */
+    font-size: var(--step-1);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    caret-color: var(--accent);
+    transition: left 0.25s var(--ease-out);
+
+    &:focus-visible {
+      outline: none;
+    }
+  }
+  /* Ein „+“ im nächsten freien Kreis zeigt, dass man hier auch eintippen kann. */
+  .tray-balls .slot.is-entry {
+    --plus: color-mix(in oklch, var(--ink-3) 70%, transparent);
+    background:
+      linear-gradient(var(--plus) 0 0) center / 0.8rem 2px no-repeat,
+      linear-gradient(var(--plus) 0 0) center / 2px 0.8rem no-repeat;
+  }
+  .tray-field:has(.tray-input:focus) .slot.is-entry {
+    border-style: solid;
+    border-color: var(--ink);
+    background: var(--surface);
+  }
+  /* Tipp voll: Feld bleibt fokussierbar (Rücktaste), ist aber unsichtbar. */
+  .tray-field.is-full .tray-input {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Die Kugel – das einzige plastische Element im ansonsten flachen UI */
+  .ball {
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .ball.is-picked,
+  .cell input:checked + .ball {
+    color: var(--accent-ink);
+    background:
+      radial-gradient(circle at 34% 28%, rgb(255 255 255 / 0.55), transparent 42%),
+      radial-gradient(circle at 50% 50%, var(--accent) 55%, color-mix(in oklch, var(--accent), black 22%) 100%);
+    box-shadow: var(--shadow-ball);
+  }
+
+  .ball-ghost {
+    position: fixed;
+    z-index: 20;
+    pointer-events: none;
+    font-size: var(--step-0);
+  }
+
+  .number-grid {
+    border: 0;
+    padding: 0.25rem 0 0;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    gap: 0.35rem;
+    justify-items: center;
+  }
+  .cell {
+    position: relative;
+    width: 100%;
+    max-width: var(--cell);
+    aspect-ratio: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    & input {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      margin: 0;
+      cursor: inherit;
+    }
+    & .ball {
+      height: 100%;
+      font-size: var(--step-0);
+      color: var(--ink);
+      background: var(--surface);
+      box-shadow: inset 0 0 0 1px var(--line);
+      transition: transform 0.15s var(--ease-out), opacity 0.2s;
+    }
+    &:active .ball {
+      transform: scale(0.9);
+    }
+    & input:focus-visible + .ball {
+      outline: 2.5px solid var(--ink);
+      outline-offset: 2px;
+    }
+    & input:disabled + .ball {
+      opacity: 0.35;
+    }
+    &:has(input:disabled) {
+      cursor: not-allowed;
+    }
+  }
+  @media (hover: hover) {
+    .cell:hover input:not(:checked, :disabled) + .ball {
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+  }
+
+  .tray-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-block: 1rem 0.25rem;
+  }
+
+  /* ------------------------------------------------------------ Buttons */
+  .button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: var(--step--1);
+    color: var(--ink);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+    transition: background-color 0.2s, transform 0.15s var(--ease-out);
+
+    & svg {
+      width: 1.15rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      & .dot {
+        fill: currentColor;
+        stroke: none;
+      }
+    }
+    &:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    &:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+  }
+  .button-primary {
+    color: var(--paper);
+    background: var(--ink);
+    box-shadow: none;
+  }
+  .button-quiet {
+    margin-top: 0.5rem;
+    box-shadow: none;
+    background: var(--surface-sunk);
+  }
+  .link-button {
+    color: var(--ink-2);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    font-size: var(--step--1);
+    min-height: 2.75rem;
+  }
+
+  /* ------------------------------------------------------------ Ergebnis */
+  result-view {
+    display: block;
+    margin-top: 1.25rem;
+  }
+  /* Ladehinweis ohne Platzbedarf im Fluss – so verschiebt sich beim Eintreffen der Daten nichts. */
+  result-view,
+  stats-view {
+    position: relative;
+  }
+  .result-loading {
+    position: absolute;
+    inset: 0 0 auto;
+    color: var(--ink-3);
+    padding-block: 1rem;
+    text-align: center;
+  }
+  .result-card {
+    padding-block: 0.5rem 1rem;
+  }
+  .result-headline {
+    font-size: var(--step-3);
+    font-weight: 750;
+    line-height: 1.08;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+  .result-card.is-empty .result-headline {
+    color: var(--ink-2);
+  }
+  .result-card.is-jackpot .result-headline {
+    color: var(--accent);
+  }
+  [data-game='eurojackpot'] .result-card.is-jackpot .result-headline {
+    color: var(--ink);
+    text-decoration: underline var(--accent) 0.18em;
+    text-underline-offset: 0.12em;
+  }
+  .result-sub {
+    margin-top: 0.6rem;
+    font-size: var(--step-1);
+    color: var(--ink-2);
+    max-width: 36ch;
+  }
+  .result-hint,
+  .result-summary,
+  .result-odds {
+    color: var(--ink-3);
+    font-size: var(--step--1);
+  }
+  .result-hint {
+    margin-top: 0.75rem;
+  }
+  @media (pointer: coarse) {
+    .for-pointer {
+      display: none;
+    }
+  }
+  @media not (pointer: coarse) {
+    .for-touch {
+      display: none;
+    }
+  }
+  .result-summary {
+    margin-bottom: 0.75rem;
+  }
+  .result-odds {
+    margin-top: 1rem;
+  }
+
+  .hit-ladder {
+    border-top: 1px solid var(--line);
+  }
+  .hit-row {
+    border-bottom: 1px solid var(--line);
+
+    & > summary,
+    & > .hit-summary {
+      display: grid;
+      grid-template-columns: 1fr auto 4.5rem;
+      align-items: baseline;
+      gap: 0.75rem;
+      padding-block: 0.85rem;
+      list-style: none;
+    }
+    & > summary {
+      cursor: pointer;
+      &::-webkit-details-marker {
+        display: none;
+      }
+    }
+    &.is-zero {
+      color: var(--ink-3);
+    }
+
+    &::details-content {
+      block-size: 0;
+      overflow: clip;
+      transition: block-size 0.3s var(--ease-out), content-visibility 0.3s allow-discrete;
+    }
+    &[open]::details-content {
+      block-size: auto;
+    }
+  }
+  result-view > .hit-row {
+    border-top: 1px solid var(--line);
+  }
+  .hit-label {
+    font-weight: 600;
+  }
+  .hit-row > summary .hit-label::after {
+    content: '';
+    display: inline-block;
+    width: 0.45em;
+    height: 0.45em;
+    margin-left: 0.5em;
+    border-right: 2px solid var(--ink-3);
+    border-bottom: 2px solid var(--ink-3);
+    transform: translateY(-0.2em) rotate(45deg);
+    transition: transform 0.2s;
+  }
+  .hit-row[open] > summary .hit-label::after {
+    transform: translateY(0.05em) rotate(-135deg);
+  }
+  .hit-expected {
+    font-size: var(--step--1);
+    color: var(--ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+  .hit-count {
+    grid-column: -2;
+    text-align: right;
+    font-size: var(--step-2);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+  }
+  .details-body {
+    padding-bottom: 1rem;
+  }
+
+  .draw-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.15rem;
+  }
+  .draw-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block: 0.3rem;
+
+    & time {
+      font-size: var(--step--1);
+      color: var(--ink-2);
+      font-variant-numeric: tabular-nums;
+    }
+  }
+  .mini-balls {
+    display: inline-flex;
+    gap: 0.25rem;
+  }
+  .mini-ball {
+    display: inline-grid;
+    place-items: center;
+    width: 1.85rem;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    font-size: 0.8rem;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    background: var(--surface-sunk);
+
+    &.is-hit {
+      color: var(--accent-ink);
+      background: var(--accent);
+    }
+    &.is-large {
+      width: 2.75rem;
+      font-size: var(--step-1);
+      font-weight: 700;
+    }
+  }
+
+  /* ------------------------------------------------------------ Statistik */
+  stats-view {
+    display: block;
+    padding-top: 0.5rem;
+  }
+  .period-switch {
+    display: flex;
+    width: 100%;
+    & button {
+      flex: 1;
+      padding-inline: 0.4rem;
+    }
+  }
+  .stats-intro {
+    margin-top: 1rem;
+    color: var(--ink-2);
+  }
+  .stats-block {
+    margin-top: 2rem;
+
+    & > h2 {
+      margin-bottom: 0.85rem;
+    }
+  }
+  .footnote {
+    margin-top: 0.75rem;
+    font-size: var(--step--1);
+    color: var(--ink-3);
+  }
+  .stat-meta {
+    color: var(--ink-3);
+    font-size: var(--step--1);
+  }
+
+  /* Divergierende Farbstufen – Zellen, Legende und Readout teilen sie */
+  .band-cold-2 {
+    --fill: var(--cold-2);
+    --fill-ink: var(--on-strong);
+  }
+  .band-cold-1 {
+    --fill: var(--cold-1);
+    --fill-ink: light-dark(var(--ink), #ffffff);
+  }
+  .band-neutral {
+    --fill: var(--neutral);
+    --fill-ink: var(--ink);
+  }
+  .band-hot-1 {
+    --fill: var(--hot-1);
+    --fill-ink: light-dark(var(--ink), #ffffff);
+  }
+  .band-hot-2 {
+    --fill: var(--hot-2);
+    --fill-ink: var(--on-strong);
+  }
+
+  .heat-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 1fr);
+    gap: 2px;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .heat-cell {
+    aspect-ratio: 1;
+    display: grid;
+    place-content: center;
+    gap: 0;
+    background: var(--fill);
+    color: var(--fill-ink);
+    font-variant-numeric: tabular-nums;
+    -webkit-tap-highlight-color: transparent;
+    transition: filter 0.15s;
+
+    &[aria-pressed='true'] {
+      outline: 2.5px solid var(--ink);
+      outline-offset: -2.5px;
+    }
+    @media (hover: hover) {
+      &:hover {
+        filter: brightness(0.94) saturate(1.1);
+      }
+    }
+  }
+  .heat-number {
+    font-weight: 700;
+    font-size: var(--step-0);
+    line-height: 1.1;
+  }
+  .heat-count {
+    font-size: 0.68rem;
+    opacity: 0.8;
+    line-height: 1.1;
+  }
+
+  .heat-legend {
+    list-style: none;
+    padding: 0;
+    margin-top: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.9rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+
+    & li {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+  }
+  .swatch {
+    width: 0.85rem;
+    height: 0.85rem;
+    border-radius: 3px;
+    background: var(--fill);
+  }
+
+  .heat-readout {
+    margin-top: 0.85rem;
+    min-height: 3.75rem;
+    padding: 0.75rem 0.85rem;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .readout-hint {
+    color: var(--ink-3);
+    font-size: var(--step--1);
+    line-height: 2.25rem;
+  }
+  .readout {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+
+    & .mini-ball {
+      flex: none;
+      background: var(--fill);
+      color: var(--fill-ink);
+    }
+  }
+
+  .dev-chart {
+    list-style: none;
+    padding: 0;
+
+    & li {
+      display: grid;
+      grid-template-columns: 2rem 1fr 3.6rem 3.4rem;
+      align-items: center;
+      gap: 0.6rem;
+      padding-block: 0.2rem;
+    }
+    & li.is-split {
+      margin-top: 0.6rem;
+    }
+  }
+  .dev-track {
+    position: relative;
+    height: 1.25rem;
+    /* Nulllinie = Erwartungswert, in der Mitte */
+    background: linear-gradient(var(--line-strong), var(--line-strong)) center / 1px 100% no-repeat;
+  }
+  .dev-bar {
+    position: absolute;
+    top: 0.125rem;
+    bottom: 0.125rem;
+    width: calc(var(--size) * 50%);
+
+    &.is-hot {
+      left: 50%;
+      background: var(--hot-2);
+      border-radius: 0 4px 4px 0;
+    }
+    &.is-cold {
+      right: 50%;
+      background: var(--cold-2);
+      border-radius: 4px 0 0 4px;
+    }
+  }
+  .dev-value,
+  .dev-count {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-size: var(--step--1);
+  }
+  .dev-value {
+    font-weight: 650;
+  }
+  .dev-count {
+    color: var(--ink-3);
+  }
+
+  .stat-list,
+  .record-list {
+    list-style: none;
+    padding: 0;
+    border-top: 1px solid var(--line);
+
+    & li {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding-block: 0.6rem;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+  .stat-list .stat-meta {
+    margin-left: auto;
+    text-align: right;
+  }
+  .pair {
+    display: inline-flex;
+    gap: 0.2rem;
+  }
+  .record-list li {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .record-link {
+    display: inline-flex;
+    gap: 0.2rem;
+    text-decoration: none;
+    border-radius: 999px;
+
+    & .mini-ball {
+      color: var(--accent-ink);
+      background: var(--accent);
+    }
+  }
+
+  .table-view {
+    margin-top: 2rem;
+
+    & summary {
+      cursor: pointer;
+      font-weight: 600;
+      min-height: 2.75rem;
+      display: flex;
+      align-items: center;
+    }
+    & table {
+      width: 100%;
+      border-collapse: collapse;
+      font-variant-numeric: tabular-nums;
+      font-size: var(--step--1);
+    }
+    & th,
+    & td {
+      padding: 0.35rem 0.25rem;
+      text-align: right;
+      border-bottom: 1px solid var(--line);
+    }
+    & thead th {
+      color: var(--ink-3);
+      font-weight: 600;
+    }
+    & tbody th {
+      text-align: left;
+    }
+  }
+
+  /* ------------------------------------------------------------ Fußzeile, Tab-Leiste, Sheet, Toast */
+  .data-footer {
+    margin-top: 2.5rem;
+    padding-block: 1.25rem 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: var(--step--1);
+    color: var(--ink-3);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+  }
+
+  .tab-bar {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem calc(0.4rem + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+    border-top: 1px solid var(--line);
+    view-transition-name: tab-bar;
+
+    & a {
+      flex: 0 1 9rem;
+      min-height: 3.1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.15rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--ink-3);
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+
+      &[aria-current='page'] {
+        color: var(--ink);
+        & svg {
+          stroke: var(--accent);
+          & .filled {
+            fill: var(--accent);
+          }
+        }
+      }
+    }
+    & svg {
+      width: 1.5rem;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      & .filled {
+        fill: currentColor;
+      }
+    }
+  }
+
+  .sheet {
+    margin: auto auto 0;
+    width: min(100%, 34rem);
+    max-height: 85dvh;
+    border: 0;
+    border-radius: 20px 20px 0 0;
+    padding: 1.5rem max(var(--gutter), 1.25rem) calc(1.5rem + env(safe-area-inset-bottom));
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: 0 -10px 40px rgb(0 0 0 / 0.2);
+    overflow: auto;
+    transition: translate 0.3s var(--ease-out), opacity 0.3s, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+    translate: 0 100%;
+    opacity: 0;
+
+    &:popover-open {
+      translate: 0 0;
+      opacity: 1;
+      @starting-style {
+        translate: 0 100%;
+        opacity: 0;
+      }
+    }
+    &::backdrop {
+      background: rgb(0 0 0 / 0);
+      transition: background-color 0.3s, overlay 0.3s allow-discrete, display 0.3s allow-discrete;
+    }
+    &:popover-open::backdrop {
+      background: rgb(0 0 0 / 0.35);
+      @starting-style {
+        background: rgb(0 0 0 / 0);
+      }
+    }
+    & h2 {
+      margin-bottom: 0.75rem;
+    }
+    & p {
+      margin-bottom: 0.75rem;
+      color: var(--ink-2);
+    }
+    & .button {
+      margin-top: 0.5rem;
+    }
+  }
+
+  .toast {
+    margin: 0 auto auto;
+    top: calc(env(safe-area-inset-top) + 0.75rem);
+    max-width: min(calc(100% - 2rem), 28rem);
+    padding: 0.7rem 1rem;
+    border: 0;
+    border-radius: 12px;
+    background: var(--ink);
+    color: var(--paper);
+    font-size: var(--step--1);
+    font-weight: 550;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 0.25);
+    transition: translate 0.25s var(--ease-out), opacity 0.25s, overlay 0.25s allow-discrete, display 0.25s allow-discrete;
+    translate: 0 -1rem;
+    opacity: 0;
+
+    &:popover-open {
+      translate: 0 0;
+      opacity: 1;
+      @starting-style {
+        translate: 0 -1rem;
+        opacity: 0;
+      }
+    }
+  }
+}
+
+/* ------------------------------------------------------------ View Transitions */
+@layer views {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.18s;
+  }
+  ::view-transition-group(*) {
+    animation-duration: 0.32s;
+    animation-timing-function: var(--ease-out);
+  }
+}
+
+/* ------------------------------------------------------------ Breite Bildschirme */
+@layer components {
+  @media (min-width: 62rem) {
+    main,
+    .app-header {
+      max-width: 66rem;
+    }
+    #view-pruefen {
+      display: grid;
+      grid-template-columns: minmax(0, 27rem) minmax(0, 1fr);
+      grid-template-rows: auto auto auto 1fr;
+      column-gap: clamp(2rem, 5vw, 4.5rem);
+      align-items: start;
+    }
+    .tray {
+      position: static;
+      margin-inline: 0;
+      padding-inline: 0;
+    }
+    .tray,
+    number-grid,
+    .tray-actions {
+      grid-column: 1;
+    }
+    result-view {
+      grid-column: 2;
+      grid-row: 1 / -1;
+      margin-top: 0.5rem;
+    }
+
+    stats-view {
+      display: grid;
+      grid-template-columns: minmax(0, 27rem) minmax(0, 1fr);
+      grid-template-rows: auto auto repeat(5, auto) 1fr;
+      column-gap: clamp(2rem, 5vw, 4.5rem);
+      align-items: start;
+    }
+    .period-switch {
+      grid-column: 1;
+    }
+    .stats-intro {
+      grid-column: 1 / -1;
+    }
+    .stats-block:first-of-type {
+      grid-column: 1;
+      grid-row: 3 / -1;
+    }
+    .stats-block:not(:first-of-type),
+    .table-view {
+      grid-column: 2;
+    }
+  }
+}

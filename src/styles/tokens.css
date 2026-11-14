@@ -1,0 +1,54 @@
+@layer reset, tokens, base, components, views;
+
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    /* Flächen & Tinte – kühles Weiß, kein Creme */
+    --paper: light-dark(#f6f7f9, #0f1115);
+    --surface: light-dark(#ffffff, #171a20);
+    --surface-sunk: light-dark(#eef0f3, #1e2229);
+    --ink: light-dark(#14171d, #eceef2);
+    --ink-2: light-dark(#4f5662, #a9b0bb);
+    --ink-3: light-dark(#656c78, #858c99);
+    --line: light-dark(#dfe2e8, #2a2f38);
+    --line-strong: light-dark(#c4c9d2, #3a404b);
+    --raised: light-dark(#ffffff, #323844);
+
+    /* Akzent je Spiel (wird über [data-game] gesetzt) */
+    --accent: light-dark(#d4252d, #d93a41);
+    --accent-ink: #ffffff;
+    --accent-soft: color-mix(in oklch, var(--accent) 12%, var(--surface));
+
+    /* Divergierende Skala „kalt ↔ heiß“ (Abweichung vom Erwartungswert) */
+    --cold-2: light-dark(#256abf, #2f6fc4);
+    --cold-1: light-dark(#a9cbf3, #22406a);
+    --neutral: light-dark(#eceef1, #252a32);
+    --hot-1: light-dark(#f4b2ae, #6b2a2e);
+    --hot-2: light-dark(#c93a3a, #c94444);
+    --on-strong: #ffffff;
+
+    /* Typografie: Systemschrift, Skala ~1,25 */
+    --font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --step--1: 0.8125rem;
+    --step-0: 1rem;
+    --step-1: 1.1875rem;
+    --step-2: 1.5rem;
+    --step-3: clamp(1.75rem, 1.2rem + 2.6vw, 2.5rem);
+
+    /* Raum & Form */
+    --gutter: 1rem;
+    --radius: 14px;
+    --radius-sm: 8px;
+    --cell: clamp(2.75rem, 12.2vw, 3.5rem);
+    --header-h: 3.5rem;
+    --tabbar-h: 4rem;
+    --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --shadow-ball: 0 1px 2px rgb(0 0 0 / 0.18), inset 0 -2px 4px rgb(0 0 0 / 0.18);
+  }
+
+  [data-game='eurojackpot'] {
+    --accent: light-dark(#e9a20b, #f2b632);
+    --accent-ink: #1d1400;
+  }
+}

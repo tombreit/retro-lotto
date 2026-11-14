@@ -1,0 +1,76 @@
+# Baut die Seite, aktualisiert dabei die Ziehungsdaten und veröffentlicht auf GitHub Pages.
+# Ein einziger Workflow, weil Pushes mit GITHUB_TOKEN keine weiteren Workflows auslösen.
+name: Daten aktualisieren & veröffentlichen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    # Nach den Ziehungen: Di + Fr Eurojackpot, Mi + Sa Lotto (21:45 UTC = 22:45 MEZ / 23:45 MESZ)
+    - cron: '45 21 * * 2,3,5,6'
+    # Täglicher Nachzügler-Lauf, falls ein Archiv erst später nachzieht
+    - cron: '30 6 * * *'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy: ${{ steps.decide.outputs.deploy }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Ziehungsdaten aktualisieren
+        id: data
+        run: node scripts/update-data.mjs
+
+      - name: Tests (inkl. Integrität der Daten)
+        run: npm test
+
+      - name: Neue Ziehungen committen
+        if: steps.data.outputs.changed == 'true'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/
+          git commit -m "data: Ziehungen bis ${{ steps.data.outputs.latest }}"
+          git push
+
+      - name: Bauen
+        run: npx vite build
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: dist
+
+      - name: Deploy nötig?
+        id: decide
+        # Zeitgesteuerte Läufe ohne neue Ziehungen müssen nichts veröffentlichen.
+        run: echo "deploy=${{ github.event_name != 'schedule' || steps.data.outputs.changed == 'true' }}" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
