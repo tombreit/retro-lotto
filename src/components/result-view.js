@@ -1,22 +1,17 @@
 // Ergebnis: live ausgewertet bei jeder Änderung des Tipps.
 
-import { analyze, expected } from '../lib/match.js';
-import {
-  formatAgo,
-  formatDate,
-  formatDecimal,
-  formatList,
-  formatNumber,
-  formatOdds,
-  formatPercent,
-  plural,
-} from '../lib/format.js';
+import { analyze, chanceEver, expected, expectedWins } from '../lib/match.js';
+import { formatAgo, formatDate, formatList, formatNumber, formatRoughly, formatTimes, plural } from '../lib/format.js';
 import { html, mount } from '../lib/html.js';
 
 const PAGE = 60;
 
-/** Erwartungswerte: eine Nachkommastelle, winzige Werte als „≈ 0“. */
-const formatExpected = (value) => (formatDecimal(value) === '0' ? '≈ 0' : formatDecimal(value));
+/** Erwartete Häufigkeit in Worten: „rund 65-mal“, „seltener als einmal“, „so gut wie nie“. */
+function roughly(value) {
+  if (value < 0.05) return 'so gut wie nie';
+  if (value < 1) return 'seltener als einmal';
+  return `rund ${formatTimes(Math.round(value))}`;
+}
 
 /** Kleine Kugelreihe einer Ziehung, Treffer hervorgehoben. */
 export const drawBalls = (numbers, tipp) =>
@@ -144,29 +139,27 @@ export class ResultView extends HTMLElement {
 
   #partial(store, tipp) {
     const { game } = store;
-    const a = this.analysis;
     const k = tipp.length;
-    const together = a.matches.get(k) ?? [];
-    const exp = expected(store, k, k);
-    const missing = game.pick - k;
+    const together = this.analysis.matches.get(k) ?? [];
     const last = together.at(-1);
+    // Bezugsgröße: Wie oft kommen k bestimmte Zahlen bei reinem Zufall zusammen?
+    const usual = roughly(expected(store, k, k));
 
     const headline =
       k === 1
-        ? `Die ${tipp[0]} wurde ${formatNumber(together.length)}-mal gezogen.`
+        ? `Die ${tipp[0]} wurde ${formatTimes(together.length)} gezogen.`
         : together.length > 0
-          ? `Diese ${k} Zahlen kamen ${formatNumber(together.length)}-mal gemeinsam.`
-          : `Diese ${k} Zahlen kamen noch nie gemeinsam.`;
-
+          ? `Diese ${k} Zahlen wurden ${formatTimes(together.length)} zusammen gezogen.`
+          : `Diese ${k} Zahlen wurden noch nie zusammen gezogen.`;
     const sub = [
-      last !== undefined && `Zuletzt am ${formatDate(store.dates[last])}.`,
-      `Erwartet wären ${formatExpected(exp)}.`,
+      last !== undefined && `${together.length === 1 ? 'Das war' : 'Zuletzt'} am ${formatDate(store.dates[last])}.`,
+      k === 1 ? `Im Schnitt wird jede Zahl ${usual} gezogen.` : `Im Schnitt kommen ${k} bestimmte Zahlen ${usual} zusammen.`,
     ].filter(Boolean);
 
     const lead = html`<div class="result-card">
       <p class="result-headline">${headline}</p>
       <p class="result-sub">${sub.join(' ')}</p>
-      <p class="result-hint">Noch ${plural(missing, 'Zahl', 'Zahlen')} bis zum vollständigen Tipp.</p>
+      <p class="result-hint">Noch ${plural(game.pick - k, 'Zahl', 'Zahlen')} bis zum vollständigen Tipp.</p>
     </div>`;
     const more =
       together.length > 0
@@ -181,6 +174,13 @@ export class ResultView extends HTMLElement {
     return { lead, more };
   }
 
+  /**
+   * Voller Tipp. Reihenfolge der Aussagen, nach Relevanz:
+   * 1. Wurde genau diese Kombination je gezogen? (Schlagzeile)
+   * 2. Hätte der Tipp sonst gewonnen – wie oft, mit wie vielen Richtigen? (Unterzeile)
+   * 3. Die Gewinne einzeln, mit Datum – unter der ausdrücklichen Annahme „bei jeder Ziehung gespielt“.
+   * 4. Einordnung: Ist das viel? Und warum ist „nie gezogen“ der Normalfall?
+   */
   #full(store, tipp) {
     const { game } = store;
     const a = this.analysis;
@@ -193,53 +193,62 @@ export class ResultView extends HTMLElement {
     let tone = 'neutral';
     if (jackpots.length > 0) {
       tone = 'jackpot';
-      const dates = jackpots.map((i) => formatDate(store.dates[i]));
-      headline = `Volltreffer! ${game.pick} Richtige am ${formatList(dates)}.`;
+      headline = `Volltreffer! ${game.pick} Richtige am ${formatList(jackpots.map((i) => formatDate(store.dates[i])))}.`;
       sub = jackpots.length > 1
         ? 'Diese Kombination wurde mehr als einmal gezogen – ein echtes Kuriosum.'
         : `Das war ${formatAgo(store.dates[jackpots[0]])}.`;
-    } else if (a.best >= game.minWinHits) {
-      const bestDraws = a.matches.get(a.best);
-      const bestLast = store.dates[bestDraws.at(-1)];
+    } else if (wins > 0) {
       headline = 'Noch nie gezogen.';
-      sub =
-        bestDraws.length === 1
-          ? `Am nächsten dran: ${a.best} Richtige am ${formatDate(bestLast)}, ${formatAgo(bestLast)}.`
-          : `Am nächsten dran: ${bestDraws.length}-mal ${a.best} Richtige, zuletzt am ${formatDate(bestLast)}.`;
+      const span = a.best - game.minWinHits;
+      const range = `${span === 0 ? a.best : `${game.minWinHits} ${span === 1 ? 'oder' : 'bis'} ${a.best}`} Richtigen`;
+      sub = `Gewonnen hättest du trotzdem: ${formatTimes(wins)} mit ${range}.`;
     } else {
       headline = 'Noch nie gezogen.';
-      sub = `Mehr als ${a.best} Richtige gab es mit diesen Zahlen nie.`;
+      sub = `Auch sonst kein Gewinn: Mehr als ${a.best} Richtige hatte dieser Tipp nie.`;
     }
 
+    // Nur Gewinnklassen, die tatsächlich vorkamen – von oben nach unten.
     const rows = [];
     for (let h = game.pick; h >= game.minWinHits; h--) {
       const count = a.histogram[h];
-      const exp = expected(store, game.pick, h);
-      const cells = html`<span class="hit-label">${h} Richtige</span>
-        <span class="hit-expected">erwartet ${formatExpected(exp)}</span>
-        <span class="hit-count">${formatNumber(count)}</span>`;
-      rows.push(
-        count
-          ? html`<details class="hit-row" data-hits="${h}" ${this.#open.has(h) ? 'open' : ''}>
-              <summary>${cells}</summary>
-              <div class="details-body"></div>
-            </details>`
-          : html`<div class="hit-row is-zero"><div class="hit-summary">${cells}</div></div>`,
-      );
+      if (!count) continue;
+      rows.push(html`<details class="hit-row" data-hits="${h}" ${this.#open.has(h) ? 'open' : ''}>
+        <summary>
+          <span class="hit-label">${h} Richtige</span>
+          <span class="hit-count">${formatTimes(count)}</span>
+        </summary>
+        <div class="details-body"></div>
+      </details>`);
     }
+
+    // Abweichung in Standardabweichungen (Poisson): unter 1 ist reiner Zufall, ab 2 auffällig.
+    const usualWins = expectedWins(store);
+    const z = (wins - usualWins) / Math.sqrt(usualWins);
+    const comparison =
+      wins === 0
+        ? 'kein einziges Mal'
+        : Math.abs(z) < 1
+          ? 'etwa genauso oft'
+          : `${Math.abs(z) < 2 ? 'etwas' : 'deutlich'} ${z > 0 ? 'öfter' : 'seltener'}`;
+    const odds = `Die Chance auf ${game.pick} Richtige liegt bei 1 zu ${formatNumber(game.combinations)} pro Ziehung,
+      egal welche ${game.extra} – und selbst über alle ${formatNumber(store.size)} Ziehungen nur bei etwa
+      1 zu ${formatRoughly(1 / chanceEver(store))}.`;
 
     const lead = html`<div class="result-card is-${tone}">
       <p class="result-headline">${headline}</p>
       <p class="result-sub">${sub}</p>
     </div>`;
-    const more = html`<p class="result-summary">
-        Gewonnen hättest du in ${plural(wins, 'Ziehung', 'Ziehungen')} von ${formatNumber(store.size)}
-        (${formatPercent(wins / store.size)}), jeweils ab ${game.minWinHits} Richtigen.
+    const more = html`${wins > 0
+        ? html`<p class="result-intro">
+              Hättest du diesen Tipp bei allen ${formatNumber(store.size)} Ziehungen seit dem
+              ${formatDate(store.dates[0])} gespielt, wären das deine Gewinne:
+            </p>
+            <div class="hit-ladder">${rows}</div>`
+        : ''}
+      <p class="result-note">
+        Im Schnitt gewinnt jeder Tipp in diesem Zeitraum ${roughly(usualWins)} – deiner ${comparison}.
       </p>
-      <div class="hit-ladder">${rows}</div>
-      <p class="result-odds">
-        Chance auf ${game.pick} Richtige pro Ziehung, egal welche ${game.extra}: ${formatOdds(game.combinations)}
-      </p>`;
+      <p class="result-note">${jackpots.length ? 'Zum Vergleich:' : 'Nie gezogen ist der Normalfall:'} ${odds}</p>`;
     return { lead, more };
   }
 }

@@ -10,8 +10,9 @@ ohne Laufzeit-Abhängigkeiten.
 - **Live-Auswertung beim Tippen:** Jede Änderung wertet sofort alle Ziehungen aus
   (Bitmasken und Popcount, rund 20 µs für 5.000 Ziehungen). Einen „Prüfen“-Button gibt es nicht.
 - **Schon ab einer Zahl:** „Die 13 wurde 564-mal gezogen.“ „Diese 3 Zahlen kamen 6-mal gemeinsam.“
-- **Vollständiger Tipp:** Volltreffer ja oder nein. Dazu die Treffer mit 6, 5, 4 und 3 Richtigen,
-  jeweils mit Datum und dem Erwartungswert bei reinem Zufall.
+- **Vollständiger Tipp:** Wurde genau diese Kombination je gezogen? Wie oft hätte der Tipp sonst
+  gewonnen, wenn man ihn bei jeder Ziehung gespielt hätte – je Gewinnklasse mit Datum? Dazu ein Satz
+  zur Einordnung (so oft gewinnt im Schnitt jeder Tipp) und die Gewinnchance.
 - **Statistik:**
   - Heat-Map nach Abweichung vom Erwartungswert in Standardabweichungen, statt nach roher Häufigkeit.
   - Größte Abweichungen, längste Abwesenheit, häufigste Paare.

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
-import { formatAgo, formatDate, formatOdds, plural } from '../src/lib/format.js';
+import { formatAgo, formatDate, formatOdds, formatRoughly, formatTimes, plural } from '../src/lib/format.js';
 
 describe('Formatierung', () => {
   it('relative Zeitangaben', () => {
@@ -16,5 +16,14 @@ describe('Formatierung', () => {
     assert.equal(formatOdds(13_983_816), '1 : 13.983.816');
     assert.equal(plural(1, 'Ziehung', 'Ziehungen'), '1 Ziehung');
     assert.equal(plural(5064, 'Ziehung', 'Ziehungen'), '5.064 Ziehungen');
+  });
+  it('Häufigkeiten und gerundete Angaben', () => {
+    assert.equal(formatTimes(1), 'einmal');
+    assert.equal(formatTimes(2), 'zweimal');
+    assert.equal(formatTimes(1081), '1.081\u2011mal', 'geschützter Bindestrich');
+    assert.equal(formatRoughly(2761.9), '2.800');
+    assert.equal(formatRoughly(2104.1), '2.100');
+    assert.equal(formatRoughly(94.4), '94');
+    assert.equal(formatRoughly(4.81), '4,8');
   });
 });

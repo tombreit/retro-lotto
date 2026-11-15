@@ -84,3 +84,14 @@ export function analyze(store, tipp) {
 
 /** Erwartete Anzahl Ziehungen mit genau `hits` Treffern bei `chosen` getippten Zahlen. */
 export const expected = (store, chosen, hits) => store.size * store.game.probability(hits, chosen);
+
+/** Wie oft ein beliebiger vollständiger Tipp über alle Ziehungen im Schnitt gewinnt (ab `minWinHits`). */
+export function expectedWins(store) {
+  const { pick, minWinHits } = store.game;
+  let sum = 0;
+  for (let h = minWinHits; h <= pick; h++) sum += expected(store, pick, h);
+  return sum;
+}
+
+/** Wahrscheinlichkeit, dass ein bestimmter Tipp in allen Ziehungen mindestens einmal komplett richtig ist. */
+export const chanceEver = (store) => -Math.expm1(store.size * Math.log1p(-1 / store.game.combinations));

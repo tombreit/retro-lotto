@@ -30,6 +30,16 @@ export const formatPercent = (n) => percentFmt.format(n);
 export const formatList = (items) => listFmt.format(items);
 export const formatOdds = (n) => `1 : ${numberFmt.format(Math.round(n))}`;
 
+/** „einmal“, „zweimal“, „81-mal“ – mit geschütztem Bindestrich (U+2011), damit „81-“ nie allein am Zeilenende steht. */
+export const formatTimes = (n) => (n === 1 ? 'einmal' : n === 2 ? 'zweimal' : `${numberFmt.format(n)}\u2011mal`);
+
+/** Auf zwei geltende Stellen gerundet, für „etwa“-Angaben: 2.761,9 → „2.800“. */
+export function formatRoughly(n) {
+  if (!n) return numberFmt.format(0);
+  const scale = 10 ** (Math.floor(Math.log10(Math.abs(n))) - 1);
+  return numberFmt.format(Math.round(n / scale) * scale);
+}
+
 /** „1 Ziehung“ / „5 Ziehungen“ */
 export const plural = (n, one, other) =>
   `${numberFmt.format(n)} ${plurals.select(n) === 'one' ? one : other}`;

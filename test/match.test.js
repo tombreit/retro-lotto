@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 import { GAMES, binomial } from '../src/games.js';
-import { analyze, createStore, expected, indexFrom, maskOf, popcount } from '../src/lib/match.js';
+import { analyze, chanceEver, createStore, expected, expectedWins, indexFrom, maskOf, popcount } from '../src/lib/match.js';
 import { loadStore } from './helpers.js';
 
 describe('popcount & maskOf', () => {
@@ -74,6 +74,14 @@ describe('analyze (Lotto-Historie)', () => {
     const result = analyze(store, [7, 14, 21, 28, 35, 42]);
     const exp3 = expected(store, 6, 3);
     assert.ok(Math.abs(result.histogram[3] - exp3) < exp3 * 0.35);
+  });
+
+  it('Einordnung: erwartete Gewinne und Chance über alle Ziehungen', () => {
+    // P(≥ 3 Richtige) = 260.624 / 13.983.816 ≈ 1 : 53,7
+    assert.ok(Math.abs(expectedWins(store) - (store.size * 260_624) / 13_983_816) < 1e-9);
+    // Für kleine p ist 1 − (1 − p)^n ≈ n · p.
+    const ever = chanceEver(store);
+    assert.ok(Math.abs(ever - store.size / 13_983_816) / ever < 1e-3);
   });
 });
 
