@@ -6,6 +6,7 @@ import './components/number-grid.js';
 import './components/tipp-tray.js';
 import './components/result-view.js';
 import './components/stats-view.js';
+import './components/jackpot-view.js';
 
 import { loadStore } from './data.js';
 import { GAMES, GAME_IDS } from './games.js';
@@ -22,6 +23,7 @@ import {
   quickTipp,
   removeNumber,
   savePrefs,
+  VIEWS,
 } from './lib/tipp.js';
 
 const $ = (selector) => document.querySelector(selector);
@@ -29,6 +31,7 @@ const grid = $('number-grid');
 const tray = $('tipp-tray');
 const result = $('result-view');
 const stats = $('stats-view');
+const jackpots = $('jackpot-view');
 const toast = $('.toast');
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
 const coarsePointer = matchMedia('(pointer: coarse)');
@@ -86,8 +89,7 @@ function render() {
     if (view === state.view) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   }
-  $('#view-pruefen').hidden = state.view !== 'pruefen';
-  $('#view-statistik').hidden = state.view !== 'statistik';
+  for (const view of VIEWS) $(`#view-${view}`).hidden = state.view !== view;
 
   if (state.view === 'pruefen') {
     grid.game = g;
@@ -96,7 +98,8 @@ function render() {
     result.update(g, store, tipp());
   } else {
     tray.clearEntry();
-    stats.update(store, state.period);
+    if (state.view === 'statistik') stats.update(store, state.period);
+    else jackpots.update(store, tipp());
   }
   renderFooter(store);
 }

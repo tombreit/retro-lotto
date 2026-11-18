@@ -18,6 +18,13 @@ ohne Laufzeit-Abhängigkeiten.
   - Größte Abweichungen, längste Abwesenheit, häufigste Paare.
   - Rekorde, z. B. 2-3-11-25-27-35, gezogen am 27.05.1962 und am 08.01.2020.
   - Zeitraumfilter.
+- **Jackpots:** die Gewinnkombination jeder Ziehung, also die Zahlen für 6 bzw. 5 Richtige, nach
+  Jahr. Ein Antippen öffnet die Kombination in „Prüfen“. Dazu Fakten über ganze Ziehungen, jeweils
+  mit dem Wert, den der Zufall erwarten lässt:
+  - Nachbarzahlen wie 12 und 13 und die längste Zahlenfolge.
+  - Ziehungen nur aus „Geburtstagszahlen“ bis 31.
+  - Das am seltensten gemeinsam gezogene Paar.
+  - Dreier, die noch nie zusammen gezogen wurden.
 - **Teilen und speichern:** Der Tipp steht in der URL (`#lotto/3-12-13-16-23-41`) und lässt sich
   über die Web Share API teilen. Der letzte Tipp bleibt lokal gespeichert.
 - **PWA:** installierbar und offline nutzbar.
@@ -97,7 +104,7 @@ data/                 Ziehungsdaten (vom Bot gepflegt)
 scripts/              Daten-Pipeline: Quellen, Validierung, Merge
 src/games.js          Spielregeln als Daten (Bereiche, Wahrscheinlichkeiten)
 src/lib/              Abfrage-Engine, Statistik, Tipp-Zustand, Formatierung
-src/components/       Custom Elements: Raster, Tipp-Leiste, Ergebnis, Statistik
+src/components/       Custom Elements: Raster, Tipp-Leiste, Ergebnis, Statistik, Jackpots
 src/styles/           CSS mit @layer, Nesting, light-dark(), Container Queries
 src/sw.template.js    Service Worker (Precache-Liste wird beim Build eingesetzt)
 test/                 node --test

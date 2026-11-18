@@ -1,5 +1,6 @@
 // Statistik über einen Bereich von Ziehungen [from, to).
 
+import { binomial } from '../games.js';
 import { indexFrom } from './match.js';
 
 /** Zeiträume für den Umschalter. `start` liefert das Startdatum relativ zur letzten Ziehung. */
@@ -57,19 +58,41 @@ export function currentGaps(store) {
   return gaps.toSorted((a, b) => b.since - a.since || a.number - b.number);
 }
 
-/** Die häufigsten Zahlenpaare im Bereich. */
-export function topPairs(store, { from, to }, limit = 5) {
+/** Wie oft jedes Zahlenpaar im Bereich gemeinsam gezogen wurde. */
+function pairCounts(store, { from, to }) {
   const { max } = store.game;
   const counts = new Uint32Array((max + 1) * (max + 1));
   for (let i = from; i < to; i++) {
     const nums = store.numbers[i];
     for (let a = 0; a < nums.length; a++)
-      for (let b = a + 1; b < nums.length; b++) counts[nums[a] * (max + 1) + nums[b]]++;
+      for (let b = a + 1; b < nums.length; b++) {
+        const [x, y] = nums[a] < nums[b] ? [nums[a], nums[b]] : [nums[b], nums[a]];
+        counts[x * (max + 1) + y]++;
+      }
   }
   const pairs = [];
   for (let a = 1; a <= max; a++)
     for (let b = a + 1; b <= max; b++) pairs.push({ pair: [a, b], count: counts[a * (max + 1) + b] });
-  return pairs.toSorted((x, y) => y.count - x.count).slice(0, limit);
+  return pairs;
+}
+
+/** Wie oft ein bestimmtes Zahlenpaar in `draws` Ziehungen bei reinem Zufall gemeinsam kommt. */
+export function pairExpected(game, draws) {
+  return (draws * game.pick * (game.pick - 1)) / (game.max * (game.max - 1));
+}
+
+/** Die häufigsten Zahlenpaare im Bereich. */
+export function topPairs(store, range, limit = 5) {
+  return pairCounts(store, range)
+    .toSorted((x, y) => y.count - x.count)
+    .slice(0, limit);
+}
+
+/** Die am seltensten gemeinsam gezogenen Paare – alle mit dem kleinsten Wert, höchstens `limit`. */
+export function rarestPairs(store, range, limit = 3) {
+  const pairs = pairCounts(store, range);
+  const min = Math.min(...pairs.map((p) => p.count));
+  return pairs.filter((p) => p.count === min).slice(0, limit);
 }
 
 /** Kombinationen, die mehr als einmal gezogen wurden. */
@@ -104,4 +127,87 @@ export function records(store) {
     }
   }
   return { streak, gap };
+}
+
+// ---------------------------------------------------------------- Muster ganzer Ziehungen
+// Über die gesamte Historie, jeweils mit dem Wert, den reiner Zufall erwarten lässt.
+
+/** Längste Folge direkt aufeinanderfolgender Zahlen in einer Ziehung (z. B. 12-13-14 → 3). */
+export function longestRunOf(numbers) {
+  const sorted = numbers.toSorted((a, b) => a - b);
+  let best = 1;
+  let run = 1;
+  for (let k = 1; k < sorted.length; k++) {
+    run = sorted[k] === sorted[k - 1] + 1 ? run + 1 : 1;
+    if (run > best) best = run;
+  }
+  return best;
+}
+
+/** Die längste Folge selbst, aufsteigend: [2, 3, 4, 5, 6] aus 2-3-4-5-6-26. */
+export function runIn(numbers, length) {
+  const sorted = numbers.toSorted((a, b) => a - b);
+  for (let k = length - 1; k < sorted.length; k++)
+    if (sorted[k] - sorted[k - length + 1] === length - 1) return sorted.slice(k - length + 1, k + 1);
+  return [];
+}
+
+/**
+ * Ziehungen mit Nachbarzahlen (mindestens zwei direkt aufeinanderfolgende Zahlen wie 12 und 13).
+ * `longest` sind alle Ziehungen mit der längsten Folge, chronologisch.
+ */
+export function neighbourDraws(store) {
+  const { max, pick, combinations } = store.game;
+  let count = 0;
+  let longest = { length: 0, indices: [] };
+  for (let i = 0; i < store.size; i++) {
+    const run = longestRunOf(store.numbers[i]);
+    if (run >= 2) count++;
+    if (run > longest.length) longest = { length: run, indices: [i] };
+    else if (run === longest.length) longest.indices.push(i);
+  }
+  // Ohne Nachbarn: pick Zahlen mit Abstand ≥ 2 aus max – das sind C(max − pick + 1, pick).
+  const expectedShare = 1 - binomial(max - pick + 1, pick) / combinations;
+  return { count, expectedShare, longest };
+}
+
+/**
+ * Ziehungen, deren Zahlen alle höchstens `limit` sind (31: nur „Geburtstagszahlen“).
+ * `last` ist der Index der jüngsten davon (oder `undefined`).
+ */
+export function drawsWithin(store, limit = 31) {
+  const { pick, combinations } = store.game;
+  const within = [...store.numbers.keys()].filter((i) => Math.max(...store.numbers[i]) <= limit);
+  return { count: within.length, last: within.at(-1), expectedShare: binomial(limit, pick) / combinations };
+}
+
+/**
+ * Dreier, die noch nie gemeinsam gezogen wurden. `examples` sind gleichmäßig über alle Treffer
+ * verteilt (deterministisch, aufsteigend sortiert).
+ */
+export function missingTriples(store, examples = 3) {
+  const { max, pick, combinations } = store.game;
+  const side = max + 1;
+  const seen = new Uint8Array(side * side * side);
+  for (const nums of store.numbers) {
+    const s = nums.toSorted((a, b) => a - b);
+    for (let a = 0; a < s.length; a++)
+      for (let b = a + 1; b < s.length; b++)
+        for (let c = b + 1; c < s.length; c++) seen[(s[a] * side + s[b]) * side + s[c]] = 1;
+  }
+  const missing = [];
+  for (let a = 1; a <= max; a++)
+    for (let b = a + 1; b <= max; b++)
+      for (let c = b + 1; c <= max; c++) if (!seen[(a * side + b) * side + c]) missing.push([a, b, c]);
+
+  const total = binomial(max, 3);
+  // Wahrscheinlichkeit, dass ein bestimmter Dreier in einer Ziehung komplett dabei ist.
+  const p = binomial(max - 3, pick - 3) / combinations;
+  const step = missing.length / Math.min(examples, missing.length);
+  return {
+    count: missing.length,
+    total,
+    expected: total * (1 - p) ** store.size,
+    examples: Array.from({ length: Math.min(examples, missing.length) }, (_, k) => missing[Math.floor(k * step)]),
+  };
 }

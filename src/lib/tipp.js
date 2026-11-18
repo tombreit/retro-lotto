@@ -2,7 +2,7 @@
 
 import { GAMES } from '../games.js';
 
-export const VIEWS = ['pruefen', 'statistik'];
+export const VIEWS = ['pruefen', 'statistik', 'jackpots'];
 
 // Ein Tipp besteht aus festen Plätzen: eine Zahl oder `null` für eine Lücke. Jede Zahl bleibt an
 // dem Platz, an dem sie eingegeben wurde; wird sie entfernt, bleibt die Lücke stehen, und die
@@ -101,21 +101,22 @@ export function parseEntry(text, max, { final = false } = {}) {
 }
 
 /**
- * Hash-Format: #lotto/3-12-13-16-23-41  ·  #lotto/3--41 (Lücke)  ·  #eurojackpot/statistik  ·  #lotto
+ * Hash-Format: #lotto/3-12-13-16-23-41  ·  #lotto/3--41 (Lücke)  ·  #eurojackpot/statistik  ·
+ * #lotto/jackpots  ·  #lotto
  * @returns {{ gameId: string, view: string, slots: (number | null)[] | null } | null}
  */
 export function parseHash(hash) {
   const [gameId, rest = ''] = hash.replace(/^#\/?/, '').split('/');
   const game = GAMES[gameId];
   if (!game) return null;
-  if (rest === 'statistik') return { gameId, view: 'statistik', slots: null };
+  if (rest !== 'pruefen' && VIEWS.includes(rest)) return { gameId, view: rest, slots: null };
   // Leere Stellen sind Lücken: „3--41“ → [3, null, 41] (Number('') = 0 wird zur Lücke).
   const slots = rest ? normalizeTipp(game, rest.split('-').map(Number)) : null;
   return { gameId, view: 'pruefen', slots };
 }
 
 export function formatHash({ gameId, view, slots }) {
-  if (view === 'statistik') return `#${gameId}/statistik`;
+  if (view !== 'pruefen') return `#${gameId}/${view}`;
   return slots?.length ? `#${gameId}/${slots.map((n) => n ?? '').join('-')}` : `#${gameId}`;
 }
 

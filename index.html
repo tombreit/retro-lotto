@@ -44,6 +44,11 @@
         <stats-view></stats-view>
       </section>
 
+      <section id="view-jackpots" class="view" aria-labelledby="tab-jackpots" hidden>
+        <h1 class="visually-hidden">Jackpots</h1>
+        <jackpot-view></jackpot-view>
+      </section>
+
       <footer class="data-footer">
         <p class="data-summary"></p>
         <button type="button" class="link-button" popovertarget="about-data">Über die Daten</button>
@@ -64,6 +69,14 @@
           <path d="M5 20V11M12 20V5M19 20v-7" />
         </svg>
         Statistik
+      </a>
+      <a id="tab-jackpots" href="#lotto/jackpots" data-view="jackpots">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="5.5" cy="6" r="2" class="filled" /><path d="M10.5 6H20" />
+          <circle cx="5.5" cy="12" r="2" /><path d="M10.5 12H20" />
+          <circle cx="5.5" cy="18" r="2" /><path d="M10.5 18H20" />
+        </svg>
+        Jackpots
       </a>
     </nav>
 

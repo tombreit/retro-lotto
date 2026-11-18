@@ -2,7 +2,16 @@
 
 import { formatDate, formatDecimal, formatList, formatNumber, formatPercent, plural } from '../lib/format.js';
 import { html, mount } from '../lib/html.js';
-import { PERIODS, currentGaps, numberStats, rangeFor, records, repeatedCombinations, topPairs } from '../lib/stats.js';
+import {
+  PERIODS,
+  currentGaps,
+  numberStats,
+  pairExpected,
+  rangeFor,
+  records,
+  repeatedCombinations,
+  topPairs,
+} from '../lib/stats.js';
 
 /** Fünf Stufen der divergierenden Skala, nach Abweichung in Standardabweichungen. */
 const BANDS = [
@@ -86,7 +95,7 @@ export class StatsView extends HTMLElement {
     }
     const m = (this.#model = this.#compute());
     const { game, range, draws, expectedCount, numbers } = m;
-    const pairExpected = (draws * game.pick * (game.pick - 1)) / (game.max * (game.max - 1));
+    const pairsExpected = pairExpected(game, draws);
     const pairs = topPairs(store, range, 5);
     const absent = currentGaps(store).slice(0, 5);
     const byDeviation = numbers.toSorted((a, b) => b.deviation - a.deviation);
@@ -169,7 +178,7 @@ export class StatsView extends HTMLElement {
               ({ pair: [a, b], count }) => html`<li>
                 <span class="pair">${ball(a)}${ball(b)}</span>
                 <span>${formatNumber(count)}-mal gemeinsam</span>
-                <span class="stat-meta">erwartet ${formatDecimal(pairExpected)}</span>
+                <span class="stat-meta">erwartet ${formatDecimal(pairsExpected)}</span>
               </li>`,
             )}
           </ol>

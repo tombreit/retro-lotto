@@ -74,6 +74,11 @@ describe('Tipp', () => {
     assert.equal(formatHash(gaps), '#lotto/3--41');
     assert.deepEqual(parseHash(formatHash(gaps)), gaps);
     assert.deepEqual(parseHash('#eurojackpot/statistik'), { gameId: 'eurojackpot', view: 'statistik', slots: null });
+    for (const gameId of ['lotto', 'eurojackpot']) {
+      const jackpots = { gameId, view: 'jackpots', slots: null };
+      assert.equal(formatHash(jackpots), `#${gameId}/jackpots`);
+      assert.deepEqual(parseHash(formatHash(jackpots)), jackpots);
+    }
     assert.deepEqual(parseHash('#lotto'), { gameId: 'lotto', view: 'pruefen', slots: null });
     assert.deepEqual(parseHash('#lotto/41-3-3-99'), { gameId: 'lotto', view: 'pruefen', slots: [41, 3] });
     assert.equal(parseHash('#keno/1-2'), null);
