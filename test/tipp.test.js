@@ -106,3 +106,16 @@ describe('Tipp', () => {
     assert.deepEqual(entry('0', lotto.max, { final: true }), { numbers: [], invalid: [0], rest: '' });
   });
 });
+
+describe('URL-Hash ohne Tipp', () => {
+  it('kennt die Ansicht „Spielen“', () => {
+    assert.deepEqual(parseHash('#eurojackpot/spielen'), { gameId: 'eurojackpot', view: 'spielen', slots: null });
+    assert.equal(formatHash({ gameId: 'lotto', view: 'spielen', slots: [3, 12] }), '#lotto/spielen');
+  });
+  it('lässt den gespeicherten Tipp bei unbekannten Ansichten in Ruhe', () => {
+    // Früher wurde daraus ein leerer Tipp, der den gespeicherten überschrieb.
+    assert.equal(parseHash('#lotto/gibtsnicht').slots, null);
+    assert.equal(parseHash('#lotto/').slots, null);
+    assert.deepEqual(parseHash('#lotto/3--41').slots, [3, null, 41]);
+  });
+});

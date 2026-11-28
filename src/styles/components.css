@@ -93,8 +93,8 @@
   }
   /*
    * Reihenfolge auf dem Smartphone. Unvollständiger Tipp: Leiste, Raster, Knöpfe, Ergebnis.
-   * Voller Tipp: Leiste, Ergebnis, Knöpfe, Raster – die Kernaussage steht oben im Bild, und
-   * „Zufallstipp“ bleibt zum Weiterwürfeln direkt unter dem Ergebnis.
+   * Voller Tipp: Leiste, Ergebnis, Mitspielen-Karte, Knöpfe, Raster – die Kernaussage steht oben
+   * im Bild, und „Zufallstipp“ bleibt zum Weiterwürfeln direkt darunter.
    */
   @media (width < 62rem) {
     result-view {
@@ -118,12 +118,16 @@
         order: 1;
         margin-top: 0.25rem;
       }
-      & .tray-actions {
+      & .result-play {
         order: 2;
+        margin-bottom: 1rem;
+      }
+      & .tray-actions {
+        order: 3;
         margin-block: 0 1.5rem;
       }
       & number-grid {
-        order: 3;
+        order: 4;
       }
       & .result-more {
         margin-top: 1.75rem;
@@ -928,6 +932,26 @@
       stroke-linecap: round;
       & .filled {
         fill: currentColor;
+      }
+    }
+
+    /* Vier Tabs passen auf dem Smartphone nicht nebeneinander: Icon über die Beschriftung.
+       Die Höhe bleibt gleich, --tabbar-h gilt weiter. */
+    @media (width < 30rem) {
+      gap: 0.25rem;
+      padding-inline: 0.5rem;
+
+      & a {
+        flex: 1 1 0;
+        min-width: 0;
+        flex-direction: column;
+        gap: 1px;
+        border-radius: 14px;
+        font-size: 0.6875rem;
+        line-height: 1.2;
+      }
+      & svg {
+        width: 1.2rem;
       }
     }
   }

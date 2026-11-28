@@ -2,7 +2,7 @@
 
 import { GAMES } from '../games.js';
 
-export const VIEWS = ['pruefen', 'statistik', 'jackpots'];
+export const VIEWS = ['pruefen', 'spielen', 'statistik', 'jackpots'];
 
 // Ein Tipp besteht aus festen Plätzen: eine Zahl oder `null` für eine Lücke. Jede Zahl bleibt an
 // dem Platz, an dem sie eingegeben wurde; wird sie entfernt, bleibt die Lücke stehen, und die
@@ -111,7 +111,8 @@ export function parseHash(hash) {
   if (!game) return null;
   if (rest !== 'pruefen' && VIEWS.includes(rest)) return { gameId, view: rest, slots: null };
   // Leere Stellen sind Lücken: „3--41“ → [3, null, 41] (Number('') = 0 wird zur Lücke).
-  const slots = rest ? normalizeTipp(game, rest.split('-').map(Number)) : null;
+  // Ohne Ziffern ist es kein Tipp (unbekannte Ansicht, Tippfehler) – der gespeicherte Tipp bleibt.
+  const slots = /\d/.test(rest) ? normalizeTipp(game, rest.split('-').map(Number)) : null;
   return { gameId, view: 'pruefen', slots };
 }
 

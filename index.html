@@ -6,8 +6,10 @@
     <title>Retro-Lotto – Hätten deine Zahlen schon mal gewonnen?</title>
     <meta
       name="description"
-      content="Prüfe deine Lottozahlen gegen alle Ziehungen von Lotto 6 aus 49 seit 1955 und Eurojackpot seit 2012 – mit Statistik zu heißen und kalten Zahlen."
+      content="Prüfe deine Lottozahlen gegen alle Ziehungen von Lotto 6 aus 49 seit 1955 und Eurojackpot seit 2012 – und spiel kostenlos bei der nächsten Ziehung mit, ohne Einsatz und ohne Gewinn."
     />
+    <meta name="author" content="Thomas Breitner" />
+    <link rel="author" href="https://thms.de/" />
     <meta name="color-scheme" content="light dark" />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f7f9" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1115" />
@@ -39,6 +41,11 @@
         <result-view></result-view>
       </section>
 
+      <section id="view-spielen" class="view" aria-labelledby="tab-spielen" hidden>
+        <h1 class="visually-hidden">Spielen</h1>
+        <play-view></play-view>
+      </section>
+
       <section id="view-statistik" class="view" aria-labelledby="tab-statistik" hidden>
         <h1 class="visually-hidden">Statistik</h1>
         <stats-view></stats-view>
@@ -51,7 +58,11 @@
 
       <footer class="data-footer">
         <p class="data-summary"></p>
-        <button type="button" class="link-button" popovertarget="about-data">Über die Daten</button>
+        <button type="button" class="link-button" popovertarget="about-data">Über Retro-Lotto</button>
+        <p class="made-by">
+          <span>Ein Projekt von Thomas Breitner, <a href="https://thms.de/" rel="author">thms.de</a></span>
+          <a href="https://thms.de/de/legals/">Impressum</a>
+        </p>
       </footer>
     </main>
 
@@ -63,6 +74,14 @@
           <circle cx="6" cy="18" r="2" class="filled" /><circle cx="12" cy="18" r="2" /><circle cx="18" cy="18" r="2" />
         </svg>
         Prüfen
+      </a>
+      <a id="tab-spielen" href="#lotto/spielen" data-view="spielen">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="4.5" y="3" width="15" height="18" rx="2.5" />
+          <path d="M9.5 9.5l5 5M14.5 9.5l-5 5" />
+        </svg>
+        Spielen
+        <span class="tab-dot" hidden><span class="visually-hidden">Neues Ergebnis</span></span>
       </a>
       <a id="tab-statistik" href="#lotto/statistik" data-view="statistik">
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -82,10 +101,14 @@
 
     <div id="about-data" popover class="sheet">
       <div class="sheet-body">
-        <h2>Über die Daten</h2>
+        <h2>Über Retro-Lotto</h2>
         <div class="about-content"></div>
         <button type="button" class="button" popovertarget="about-data" popovertargetaction="hide">Schließen</button>
       </div>
+    </div>
+
+    <div id="reveal" popover class="sheet reveal-sheet" role="dialog" aria-labelledby="reveal-title">
+      <draw-reveal></draw-reveal>
     </div>
 
     <div class="toast" popover="manual" role="status"></div>

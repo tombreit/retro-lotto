@@ -13,6 +13,17 @@ const longDateFmt = new Intl.DateTimeFormat('de-DE', {
   year: 'numeric',
   timeZone: 'UTC',
 });
+const dayFmt = new Intl.DateTimeFormat('de-DE', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+const fullDayFmt = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+const weekdayFmt = new Intl.DateTimeFormat('de-DE', { weekday: 'long', timeZone: 'UTC' });
+const timeFmt = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' });
+const euroFmt = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
 const numberFmt = new Intl.NumberFormat('de-DE');
 const decimalFmt = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
 const percentFmt = new Intl.NumberFormat('de-DE', { style: 'percent', maximumFractionDigits: 1 });
@@ -24,6 +35,15 @@ const toDate = (iso) => new Date(`${iso}T00:00:00Z`);
 
 export const formatDate = (iso) => dateFmt.format(toDate(iso));
 export const formatLongDate = (iso) => longDateFmt.format(toDate(iso));
+/** „Mittwoch, 2. Dezember“ – für Termine in der nahen Zukunft und Vergangenheit. */
+export const formatDay = (iso) => dayFmt.format(toDate(iso));
+/** „Sonntag, 13. März 1977“ */
+export const formatFullDay = (iso) => fullDayFmt.format(toDate(iso));
+/** „Mittwoch“ */
+export const formatWeekday = (iso) => weekdayFmt.format(toDate(iso));
+/** „18:25 Uhr“ – ein Zeitpunkt in Berliner Zeit, egal wo das Gerät steht. */
+export const formatTime = (instant) => `${timeFmt.format(instant)} Uhr`;
+export const formatEuro = (n) => euroFmt.format(n);
 export const formatNumber = (n) => numberFmt.format(n);
 export const formatDecimal = (n) => decimalFmt.format(n);
 export const formatPercent = (n) => percentFmt.format(n);
@@ -43,6 +63,22 @@ export function formatRoughly(n) {
 /** „1 Ziehung“ / „5 Ziehungen“ */
 export const plural = (n, one, other) =>
   `${numberFmt.format(n)} ${plurals.select(n) === 'one' ? one : other}`;
+
+/** „2 Tage und 4 Stunden“, „4 Stunden und 12 Minuten“, „12 Minuten“ – die zwei größten Einheiten. */
+export function formatDuration({ days, hours, minutes }) {
+  const units = [
+    [days, 'Tag', 'Tage'],
+    [hours, 'Stunde', 'Stunden'],
+    [minutes, 'Minute', 'Minuten'],
+  ];
+  const first = units.findIndex(([n]) => n > 0);
+  if (first < 0) return plural(0, 'Minute', 'Minuten');
+  return units
+    .slice(first, first + 2)
+    .filter(([n]) => n > 0)
+    .map(([n, one, other]) => plural(n, one, other))
+    .join(' und ');
+}
 
 /** Heutiges Datum als ISO-String (lokale Zeit des Geräts). */
 export const todayIso = () => new Date().toLocaleDateString('sv-SE');

@@ -7,7 +7,15 @@ on:
     branches: [main]
   workflow_dispatch:
   schedule:
-    # Nach den Ziehungen: Di + Fr Eurojackpot, Mi + Sa Lotto (21:45 UTC = 22:45 MEZ / 23:45 MESZ)
+    # Kurz nach den Ziehungen, damit Mitspieler ihr Ergebnis noch am selben Abend bekommen.
+    # Cron läuft in UTC; die Zeiten passen für Winter- (MEZ) und Sommerzeit (MESZ):
+    # Lotto Mi 18:25 Uhr → 19:10 MEZ / 20:10 MESZ
+    - cron: '10 18 * * 3'
+    # Lotto Sa 19:25 Uhr → 20:10 MEZ / 21:10 MESZ
+    - cron: '10 19 * * 6'
+    # Eurojackpot Di + Fr gegen 20 Uhr → 21:15 MEZ / 22:15 MESZ
+    - cron: '15 20 * * 2,5'
+    # Zweiter Anlauf am späten Abend, falls die Quellen noch nichts hatten (22:45 MEZ / 23:45 MESZ)
     - cron: '45 21 * * 2,3,5,6'
     # Täglicher Nachzügler-Lauf, falls ein Archiv erst später nachzieht
     - cron: '30 6 * * *'

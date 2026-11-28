@@ -1,0 +1,524 @@
+/* Mitspielen: Karte in „Prüfen“, Tab „Spielen“, Ziehungs-Animation.
+   Gleiche Sprache wie der Rest: flache Flächen, die Kugel als einziges plastisches Element.
+   Neu ist nur der Schein – gedruckt in der Spielfarbe, angekreuzt mit Tinte. */
+
+@layer components {
+  /* ------------------------------------------------------------ Knöpfe und Schalter */
+  a.button {
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Die eine Aktion in der Spielfarbe: mitspielen bzw. aufdecken. */
+  .button-accent {
+    color: var(--accent-ink);
+    background: var(--accent);
+    box-shadow: none;
+    padding-inline: 1.15rem;
+  }
+
+  .switch {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    font-size: var(--step--1);
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+
+    & input {
+      position: absolute;
+      inset: 0;
+      margin: 0;
+      opacity: 0;
+      cursor: inherit;
+    }
+  }
+  .switch-track {
+    flex: none;
+    position: relative;
+    width: 2.4rem;
+    height: 1.4rem;
+    border-radius: 999px;
+    background: var(--ink-3);
+    transition: background-color 0.2s;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: calc(1.4rem - 4px);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: var(--paper);
+      transition: translate 0.2s var(--ease-out);
+    }
+  }
+  .switch input:checked + .switch-track {
+    background: var(--ink);
+    &::after {
+      translate: 1rem 0;
+    }
+  }
+  .switch input:focus-visible + .switch-track {
+    outline: 2.5px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  /* ------------------------------------------------------------ Mitspielen-Karte (Prüfen) */
+  play-card {
+    display: block;
+  }
+  .play-card {
+    padding: 0.9rem 1rem 0.6rem;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+
+    & > .link-button {
+      margin-top: 0.1rem;
+      text-align: left;
+    }
+  }
+  .play-title {
+    font-size: var(--step-1);
+    font-weight: 650;
+    line-height: 1.25;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+
+    & svg {
+      display: inline-block;
+      width: 1.1em;
+      margin-right: 0.3em;
+      vertical-align: -0.18em;
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 2.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+  }
+  .play-meta {
+    margin-top: 0.3rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+  }
+  .play-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+
+    & .switch {
+      margin-left: 0.4rem;
+    }
+  }
+
+  /* ------------------------------------------------------------ Tab „Spielen“ */
+  play-view {
+    display: block;
+    padding-top: 0.5rem;
+  }
+  .play-hero {
+    & .play-row {
+      margin-top: 1.1rem;
+    }
+    & .result-hint {
+      max-width: 42ch;
+      margin-top: 1rem;
+    }
+    & .link-button {
+      margin-top: 0.1rem;
+      text-align: left;
+    }
+    /* Der Countdown zählt in der Überschrift – Ziffern gleich breit, damit nichts wackelt. */
+    & [data-countdown] {
+      font-variant-numeric: tabular-nums;
+    }
+  }
+  .stats-lede {
+    margin-bottom: 0.85rem;
+    color: var(--ink-2);
+  }
+  .play-elsewhere {
+    margin-top: 1.5rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+
+    & a {
+      text-underline-offset: 0.2em;
+    }
+  }
+
+  /* Der Schein: links das Tippfeld im Kleinen, daneben die Zahlen im Klartext. */
+  .ticket-list {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.6rem;
+  }
+  .ticket {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.7rem;
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: inset 0 0 0 1px var(--line);
+  }
+  .mini-field {
+    --cross: linear-gradient(45deg, transparent 41%, var(--ink) 41% 59%, transparent 59%),
+      linear-gradient(-45deg, transparent 41%, var(--ink) 41% 59%, transparent 59%);
+    display: grid;
+    grid-template-columns: repeat(var(--cols), 0.5rem);
+    gap: 2px;
+    padding: 5px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+
+    & i {
+      aspect-ratio: 1;
+      border-radius: 1.5px;
+      box-shadow: inset 0 0 0 1px color-mix(in oklch, var(--accent) 50%, transparent);
+    }
+    & i.is-marked {
+      background: var(--cross);
+      box-shadow: none;
+    }
+  }
+  .ticket-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 0.6rem;
+    font-size: var(--step-1);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    border-radius: 4px;
+  }
+  .ticket-status {
+    margin-top: 0.15rem;
+    font-size: var(--step--1);
+    color: var(--ink-2);
+
+    & strong {
+      font-weight: 650;
+      color: var(--ink);
+    }
+  }
+  .ticket-remove {
+    min-height: 2.25rem;
+    margin-bottom: -0.5rem;
+    font-size: var(--step--1);
+    color: var(--ink-3);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .tally {
+    border-top: 1px solid var(--line);
+
+    & > div {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-block: 0.7rem;
+      border-bottom: 1px solid var(--line);
+    }
+    & dt {
+      color: var(--ink-2);
+    }
+    & dd {
+      text-align: right;
+      font-size: var(--step-1);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+    & small {
+      display: block;
+      font-size: var(--step--1);
+      font-weight: 400;
+      letter-spacing: 0;
+      color: var(--ink-3);
+    }
+  }
+
+  /* Trefferkarte: leere Plätze wie in der Tipp-Leiste, jede getroffene Zahl liegt als Kugel darin. */
+  .hit-card {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(var(--cols), minmax(0, 2.4rem));
+    gap: 0.35rem;
+
+    & li {
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      border: 1.5px dashed var(--line-strong);
+      font-size: var(--step--1);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      color: var(--ink-3);
+    }
+    & li.is-picked {
+      border: 0;
+    }
+  }
+
+  .history-row {
+    & .mini-balls {
+      margin-left: auto;
+    }
+    & .mini-ball {
+      width: 1.7rem;
+    }
+  }
+  .history-hits {
+    min-width: 1.25rem;
+    text-align: right;
+    font-size: var(--step-1);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Punkt am Tab: Ein Ergebnis wartet. Sitzt an der Ecke des Icons, egal wie die Leiste umbricht. */
+  .tab-bar a {
+    position: relative;
+  }
+  .tab-dot {
+    position: absolute;
+    top: 0.55rem;
+    left: calc(50% - 2.6rem);
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 2px var(--surface);
+  }
+  @media (width < 30rem) {
+    .tab-dot {
+      top: 0.3rem;
+      left: calc(50% + 0.45rem);
+    }
+  }
+
+  /* ------------------------------------------------------------ Ziehungs-Animation */
+  draw-reveal {
+    display: block;
+  }
+  .reveal-sheet {
+    /* Kugeln fallen von oben herein und Konfetti fliegt über den Rand – nichts davon soll scrollen. */
+    overflow-x: clip;
+  }
+  .reveal {
+    position: relative;
+    display: grid;
+    justify-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+  draw-reveal.is-running .reveal {
+    cursor: pointer;
+  }
+  .reveal .reveal-title {
+    margin: 0;
+  }
+  .reveal-date {
+    min-height: 1.5em;
+    margin: -0.65rem 0 0;
+    color: var(--ink-2);
+    font-variant-numeric: tabular-nums;
+  }
+  .reveal-year {
+    display: inline-block;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .reveal-drawn {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    gap: clamp(0.35rem, 2vw, 0.6rem);
+    margin-block: 0.5rem 0.25rem;
+  }
+  .reveal-slot {
+    position: relative;
+    width: clamp(2.5rem, 12vw, 3.25rem);
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 2px dashed var(--line-strong);
+    transition: border-color 0.2s;
+
+    &.is-filled {
+      border-color: transparent;
+    }
+  }
+  .reveal-ball {
+    position: absolute;
+    inset: -2px;
+    font-size: var(--step-1);
+    transition: filter 0.4s;
+  }
+  /* Nicht getippt: Die Kugel verblasst, die Treffer bleiben leuchtend liegen. */
+  .reveal-slot.is-miss .reveal-ball {
+    filter: grayscale(1) opacity(0.45);
+  }
+
+  .reveal-tickets {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .reveal-ticket {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+
+    & .mini-ball {
+      transition: background-color 0.25s, color 0.25s;
+    }
+  }
+  .reveal-count {
+    min-width: 1.1rem;
+    font-size: var(--step-2);
+    font-weight: 750;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+
+    &[data-count='0'] {
+      color: var(--ink-3);
+    }
+  }
+
+  /* Platz fürs Ergebnis ist von Anfang an reserviert – das Sheet wächst am Ende nicht. */
+  .reveal-result {
+    min-height: 8.5rem;
+    display: grid;
+    justify-items: center;
+    align-content: start;
+
+    & .result-sub {
+      max-width: 30ch;
+      margin-bottom: 0;
+    }
+    & .result-hint {
+      max-width: 34ch;
+      margin-bottom: 0;
+      color: var(--ink-3);
+    }
+    /* Im Sheet sind Absätze sonst gedämpft – die Schlagzeile nicht. */
+    & .result-headline {
+      margin-bottom: 0;
+      color: var(--ink);
+    }
+    & .result-headline.is-win {
+      color: var(--accent);
+    }
+  }
+  [data-game='eurojackpot'] .reveal-result .result-headline.is-win {
+    color: var(--ink);
+    text-decoration: underline var(--accent) 0.18em;
+    text-underline-offset: 0.12em;
+  }
+  .reveal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+
+    & .button {
+      margin-top: 0;
+    }
+  }
+
+  .confetti {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .confetti-0 {
+    background: var(--accent);
+  }
+  .confetti-1 {
+    background: var(--ink);
+  }
+  .confetti-2 {
+    background: var(--line-strong);
+  }
+
+  /* ------------------------------------------------------------ Über-Sheet und Fußzeile */
+  .sheet h3 {
+    margin: 1.25rem 0 0.4rem;
+    font-size: var(--step-0);
+    font-weight: 650;
+
+    &:first-child {
+      margin-top: 0.25rem;
+    }
+  }
+  .maker {
+    display: grid;
+    gap: 0.1rem;
+    margin-bottom: 1rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius);
+    background: var(--surface-sunk);
+    text-decoration: none;
+
+    & strong {
+      font-weight: 650;
+    }
+    & span {
+      font-size: var(--step--1);
+      color: var(--ink-2);
+    }
+    & .maker-more {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+  }
+  .made-by {
+    flex-basis: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.25rem 1rem;
+
+    & a {
+      text-underline-offset: 0.2em;
+    }
+  }
+
+  /* ------------------------------------------------------------ Breite Bildschirme */
+  @media (min-width: 62rem) {
+    .result-play {
+      margin-block: 0.5rem 1.75rem;
+      max-width: 30rem;
+    }
+    play-view {
+      display: grid;
+      grid-template-columns: minmax(0, 27rem) minmax(0, 1fr);
+      column-gap: clamp(2rem, 5vw, 4.5rem);
+      align-items: start;
+    }
+    .play-side > .stats-block:first-child {
+      margin-top: 0.5rem;
+    }
+  }
+}

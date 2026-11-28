@@ -28,6 +28,8 @@ export const GAMES = Object.freeze({
     id: 'lotto',
     name: 'Lotto 6 aus 49',
     label: '6 aus 49',
+    /** Kurzname für Sätze wie „3 Richtige beim Lotto“. */
+    short: 'Lotto',
     max: 49,
     pick: 6,
     columns: 7,
@@ -37,6 +39,13 @@ export const GAMES = Object.freeze({
     minWinHits: 3,
     /** Wochentage für neue Ziehungen (0 = So): Mittwoch und Samstag. */
     drawDays: [3, 6],
+    /**
+     * Annahmeschluss und Ziehung je Wochentag in Berliner Zeit – fürs Mitspielen. Der echte
+     * Annahmeschluss unterscheidet sich je Bundesland um wenige Minuten.
+     */
+    drawTimes: { 3: { closes: '18:00', at: '18:25' }, 6: { closes: '19:00', at: '19:25' } },
+    /** Einsatz je Tipp in Euro (ohne Bearbeitungsgebühr) – für „Einsatz gespart“. */
+    price: 1.2,
     /** Ab hier werden fehlende Ziehungstage als Lücke gemeldet. */
     gapCheckFrom: '2001-01-01',
     firstDraw: '1955-10-09',
@@ -45,6 +54,7 @@ export const GAMES = Object.freeze({
     id: 'eurojackpot',
     name: 'Eurojackpot 5 aus 50',
     label: 'Eurojackpot',
+    short: 'Eurojackpot',
     max: 50,
     pick: 5,
     columns: 7,
@@ -52,6 +62,9 @@ export const GAMES = Object.freeze({
     minWinHits: 3,
     /** Dienstag (seit 03/2022) und Freitag. */
     drawDays: [2, 5],
+    /** Gezogen wird in Helsinki gegen 20 Uhr deutscher Zeit. */
+    drawTimes: { 2: { closes: '19:00', at: '20:00' }, 5: { closes: '19:00', at: '20:00' } },
+    price: 2,
     gapCheckFrom: '2012-03-23',
     firstDraw: '2012-03-23',
     /** Bis hierhin wurde nur freitags gezogen. */

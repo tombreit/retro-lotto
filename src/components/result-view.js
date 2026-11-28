@@ -3,6 +3,7 @@
 import { analyze, chanceEver, expected, expectedWins } from '../lib/match.js';
 import { formatAgo, formatDate, formatList, formatNumber, formatRoughly, formatTimes, plural } from '../lib/format.js';
 import { html, mount } from '../lib/html.js';
+import './play-card.js';
 
 const PAGE = 60;
 
@@ -38,10 +39,12 @@ function drawList(store, indices, tipp, shown) {
 }
 
 /**
- * Das Ergebnis besteht aus zwei Blöcken, die das Layout getrennt platziert: der Kernaussage
- * (`.result-lead`, zugleich Live-Region für Screenreader) und den Details (`.result-more`).
+ * Das Ergebnis besteht aus drei Blöcken, die das Layout getrennt platziert: der Kernaussage
+ * (`.result-lead`, zugleich Live-Region für Screenreader), der Mitspielen-Karte (`.result-play`,
+ * nur bei vollem Tipp) und den Details (`.result-more`).
  * Bei vollem Tipp steht die Kernaussage auf dem Smartphone über dem Raster, sonst darunter.
- * Beide Container bleiben bestehen – eine neu eingefügte Live-Region würde nicht angesagt.
+ * Die Container bleiben bestehen – eine neu eingefügte Live-Region würde nicht angesagt, und die
+ * Karte soll bei jeder Auswertung ihren Zustand (Dauerschein-Schalter, Fokus) behalten.
  */
 export class ResultView extends HTMLElement {
   #game = null;
@@ -54,7 +57,12 @@ export class ResultView extends HTMLElement {
 
   connectedCallback() {
     if (this.#lead) return;
-    mount(this, html`<div class="result-lead" aria-live="polite"></div><div class="result-more"></div>`);
+    mount(
+      this,
+      html`<div class="result-lead" aria-live="polite"></div>
+        <div class="result-play" hidden><play-card></play-card></div>
+        <div class="result-more"></div>`,
+    );
     this.#lead = this.querySelector('.result-lead');
     this.#more = this.querySelector('.result-more');
     this.addEventListener('toggle', (event) => {
@@ -73,6 +81,11 @@ export class ResultView extends HTMLElement {
       this.#shown.set(key, (this.#shown.get(key) ?? PAGE) + PAGE);
       this.#fillDetails(details);
     });
+  }
+
+  /** Die Mitspielen-Karte – die App befüllt sie und blendet ihren Platz ein. */
+  get playCard() {
+    return this.querySelector('play-card');
   }
 
   /** @param store fehlt, solange die Ziehungen des Spiels noch laden */
